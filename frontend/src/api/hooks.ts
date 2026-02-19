@@ -147,3 +147,15 @@ export function useRegenerateAppSecret() {
     },
   })
 }
+
+export function useGenerateOneTimeToken() {
+  return useMutation({
+    mutationFn: (appId: string) => api.apps.generateOneTimeToken(appId),
+  })
+}
+
+export function useValidateOneTimeToken() {
+  return useMutation({
+    mutationFn: (token: string) => api.oneTimeToken.validate(token),
+  })
+}

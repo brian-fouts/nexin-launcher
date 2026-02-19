@@ -4,6 +4,7 @@ import AppDetail from './pages/AppDetail'
 import Apps from './pages/Apps'
 import CreateApp from './pages/CreateApp'
 import Health from './pages/Health'
+import ValidateToken from './pages/ValidateToken'
 import Home from './pages/Home'
 import Items from './pages/Items'
 import Login from './pages/Login'
@@ -74,6 +75,7 @@ function App() {
           <Route path="/items" element={<Items />} />
           <Route path="/apps" element={<Apps />} />
           <Route path="/apps/new" element={<CreateApp />} />
+          <Route path="/apps/validate-token" element={<ValidateToken />} />
           <Route path="/apps/:appId" element={<AppDetail />} />
           <Route path="/account" element={<MyAccount />} />
           <Route path="/login" element={<Login />} />

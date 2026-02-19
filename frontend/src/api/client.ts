@@ -207,5 +207,18 @@ export const api = {
         method: 'POST',
       })
     },
+    generateOneTimeToken(appId: string): Promise<{ token: string; expires_in: number }> {
+      return request<{ token: string; expires_in: number }>(`${API_V1}/apps/${appId}/one-time-token/`, {
+        method: 'POST',
+      })
+    },
+  },
+  oneTimeToken: {
+    validate(token: string): Promise<{ user_id: string; username: string; app_id: string }> {
+      return request<{ user_id: string; username: string; app_id: string }>(`${API_V1}/one-time-token/validate/`, {
+        method: 'POST',
+        body: JSON.stringify({ token }),
+      })
+    },
   },
 }

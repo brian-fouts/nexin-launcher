@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import {
   useApp,
   useDeleteApp,
+  useGenerateOneTimeToken,
   useRegenerateAppSecret,
   useUpdateApp,
 } from '../api/hooks'
@@ -20,10 +21,12 @@ export default function AppDetail() {
   const updateApp = useUpdateApp()
   const deleteApp = useDeleteApp()
   const regenerateSecret = useRegenerateAppSecret()
+  const generateOneTimeToken = useGenerateOneTimeToken()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [editing, setEditing] = useState(false)
   const [newSecret, setNewSecret] = useState<string | null>(null)
+  const [oneTimeToken, setOneTimeToken] = useState<string | null>(null)
 
   if (!user) {
     return <Navigate to="/login" replace />
@@ -60,6 +63,14 @@ export default function AppDetail() {
     if (!confirm('Delete this app? This cannot be undone.')) return
     deleteApp.mutate(appId, {
       onSuccess: () => navigate('/apps'),
+    })
+  }
+
+  const handleGenerateOneTimeToken = () => {
+    if (!appId) return
+    setOneTimeToken(null)
+    generateOneTimeToken.mutate(appId, {
+      onSuccess: (data) => setOneTimeToken(data.token),
     })
   }
 
@@ -108,6 +119,33 @@ export default function AppDetail() {
           </button>
         </div>
       )}
+
+      <div className="card" style={{ marginBottom: '1rem' }}>
+        <h3 style={{ marginTop: 0 }}>One-time token</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
+          A JWT that encodes your user and this app. Valid for 60 seconds; only one valid at a time per user/app. Single use.
+        </p>
+        <button
+          type="button"
+          onClick={handleGenerateOneTimeToken}
+          disabled={generateOneTimeToken.isPending}
+        >
+          {generateOneTimeToken.isPending ? 'Generating…' : 'Generate one-time token'}
+        </button>
+        {generateOneTimeToken.isError && (
+          <p style={{ color: 'var(--error)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+            {generateOneTimeToken.error instanceof Error ? generateOneTimeToken.error.message : 'Failed'}
+          </p>
+        )}
+        {oneTimeToken && (
+          <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'var(--bg)', borderRadius: 8, fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all' }}>
+            {oneTimeToken}
+          </div>
+        )}
+        <p style={{ marginTop: '0.75rem', marginBottom: 0, fontSize: '0.875rem' }}>
+          <Link to="/apps/validate-token" style={{ color: 'var(--accent)' }}>Validate a token →</Link>
+        </p>
+      </div>
 
       {isOwner && (
         <div className="card">

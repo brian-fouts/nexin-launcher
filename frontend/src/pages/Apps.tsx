@@ -18,9 +18,14 @@ export default function Apps() {
     <div style={{ marginTop: '1rem' }}>
       <div className="card" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <h2 style={{ margin: 0 }}>Apps</h2>
-        <Link to="/apps/new" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
-          + Create app
-        </Link>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <Link to="/apps/validate-token" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.875rem' }}>
+            Validate token
+          </Link>
+          <Link to="/apps/new" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
+            + Create app
+          </Link>
+        </div>
       </div>
       <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
         All apps in the system. You can create apps and manage the ones you created.

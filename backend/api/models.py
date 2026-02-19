@@ -112,3 +112,22 @@ class App(models.Model):
         from django.contrib.auth.hashers import make_password
         self.app_secret = make_password(plaintext_secret)
         self.save()
+
+
+class OneTimeToken(models.Model):
+    """Stored jti for one-time JWTs. One valid per (user, app); deleted when token is used."""
+
+    jti = models.CharField(max_length=64, unique=True, db_index=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="one_time_tokens",
+    )
+    app = models.ForeignKey(App, on_delete=models.CASCADE, related_name="one_time_tokens")
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        db_table = "api_one_time_token"
+        constraints = [
+            models.UniqueConstraint(fields=["user", "app"], name="api_one_time_token_one_per_user_app"),
+        ]
