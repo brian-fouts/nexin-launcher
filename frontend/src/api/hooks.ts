@@ -12,6 +12,8 @@ import {
   type ItemUpdate,
   type LoginPayload,
   type RegisterPayload,
+  type ServerCreate,
+  type ServerUpdate,
 } from './client'
 import { queryKeys } from './keys'
 
@@ -157,5 +159,57 @@ export function useGenerateOneTimeToken() {
 export function useValidateOneTimeToken() {
   return useMutation({
     mutationFn: (token: string) => api.oneTimeToken.validate(token),
+  })
+}
+
+// --- Servers hooks ---
+
+export function useServers(appId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.apps.servers(appId),
+    queryFn: () => api.apps.servers.list(appId!),
+    enabled: !!appId,
+  })
+}
+
+export function useServer(appId: string | null, serverId: string | null) {
+  return useQuery({
+    queryKey: [...queryKeys.apps.servers(appId), serverId],
+    queryFn: () => api.apps.servers.get(appId!, serverId!),
+    enabled: !!appId && !!serverId,
+  })
+}
+
+export function useCreateServer(appId: string | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: ServerCreate) => api.apps.servers.create(appId!, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.apps.servers(appId) })
+      qc.invalidateQueries({ queryKey: queryKeys.apps.all })
+    },
+  })
+}
+
+export function useUpdateServer(appId: string | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ serverId, data }: { serverId: string; data: ServerUpdate }) =>
+      api.apps.servers.update(appId!, serverId, data),
+    onSuccess: (_, { serverId }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.apps.servers(appId) })
+      qc.invalidateQueries({ queryKey: queryKeys.apps.all })
+    },
+  })
+}
+
+export function useDeleteServer(appId: string | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (serverId: string) => api.apps.servers.delete(appId!, serverId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.apps.servers(appId) })
+      qc.invalidateQueries({ queryKey: queryKeys.apps.all })
+    },
   })
 }

@@ -13,5 +13,6 @@ export const queryKeys = {
     all: ['api', 'apps'] as const,
     list: () => [...queryKeys.apps.all, 'list'] as const,
     detail: (id: string | null) => [...queryKeys.apps.all, 'detail', id] as const,
+    servers: (appId: string | null) => [...queryKeys.apps.all, 'servers', appId] as const,
   },
 }

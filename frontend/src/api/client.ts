@@ -128,6 +128,32 @@ export interface AppUpdate {
   description?: string
 }
 
+// --- Server types ---
+
+export interface Server {
+  server_id: string
+  app_id: string
+  server_name: string
+  server_description: string
+  game_modes: Record<string, string>
+  created_by_id: string
+  created_by_username: string
+  ip_address: string | null
+  created_at: string
+}
+
+export interface ServerCreate {
+  server_name: string
+  server_description?: string
+  game_modes?: Record<string, string>
+}
+
+export interface ServerUpdate {
+  server_name?: string
+  server_description?: string
+  game_modes?: Record<string, string>
+}
+
 // --- Endpoints ---
 
 export const api = {
@@ -211,6 +237,29 @@ export const api = {
       return request<{ token: string; expires_in: number }>(`${API_V1}/apps/${appId}/one-time-token/`, {
         method: 'POST',
       })
+    },
+    servers: {
+      list(appId: string): Promise<Server[]> {
+        return request<Server[]>(`${API_V1}/apps/${appId}/servers/`)
+      },
+      get(appId: string, serverId: string): Promise<Server> {
+        return request<Server>(`${API_V1}/apps/${appId}/servers/${serverId}/`)
+      },
+      create(appId: string, data: ServerCreate): Promise<Server> {
+        return request<Server>(`${API_V1}/apps/${appId}/servers/`, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        })
+      },
+      update(appId: string, serverId: string, data: ServerUpdate): Promise<Server> {
+        return request<Server>(`${API_V1}/apps/${appId}/servers/${serverId}/`, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        })
+      },
+      delete(appId: string, serverId: string): Promise<void> {
+        return request<void>(`${API_V1}/apps/${appId}/servers/${serverId}/`, { method: 'DELETE' })
+      },
     },
   },
   oneTimeToken: {

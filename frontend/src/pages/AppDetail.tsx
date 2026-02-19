@@ -3,9 +3,11 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
   useApp,
+  useCreateServer,
   useDeleteApp,
   useGenerateOneTimeToken,
   useRegenerateAppSecret,
+  useServers,
   useUpdateApp,
 } from '../api/hooks'
 
@@ -27,6 +29,14 @@ export default function AppDetail() {
   const [editing, setEditing] = useState(false)
   const [newSecret, setNewSecret] = useState<string | null>(null)
   const [oneTimeToken, setOneTimeToken] = useState<string | null>(null)
+  const [serverName, setServerName] = useState('')
+  const [serverDescription, setServerDescription] = useState('')
+  const [gameModesEntries, setGameModesEntries] = useState<Array<{ id: string; key: string; value: string }>>([
+    { id: crypto.randomUUID(), key: '', value: '' },
+  ])
+
+  const { data: servers, isLoading: serversLoading } = useServers(appId ?? null)
+  const createServer = useCreateServer(appId ?? null)
 
   if (!user) {
     return <Navigate to="/login" replace />
@@ -72,6 +82,40 @@ export default function AppDetail() {
     generateOneTimeToken.mutate(appId, {
       onSuccess: (data) => setOneTimeToken(data.token),
     })
+  }
+
+  const addGameModeRow = () => {
+    setGameModesEntries((prev) => [...prev, { id: crypto.randomUUID(), key: '', value: '' }])
+  }
+
+  const removeGameModeRow = (id: string) => {
+    setGameModesEntries((prev) => (prev.length > 1 ? prev.filter((e) => e.id !== id) : prev))
+  }
+
+  const updateGameModeEntry = (id: string, field: 'key' | 'value', value: string) => {
+    setGameModesEntries((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, [field]: value } : e))
+    )
+  }
+
+  const handleCreateServer = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!appId || !serverName.trim()) return
+    const game_modes: Record<string, string> = {}
+    gameModesEntries.forEach((e) => {
+      const k = e.key.trim()
+      if (k) game_modes[k] = e.value.trim()
+    })
+    createServer.mutate(
+      { server_name: serverName.trim(), server_description: serverDescription.trim() || undefined, game_modes },
+      {
+        onSuccess: () => {
+          setServerName('')
+          setServerDescription('')
+          setGameModesEntries([{ id: crypto.randomUUID(), key: '', value: '' }])
+        },
+      }
+    )
   }
 
   if (isLoading || !appId) return <p>Loading…</p>
@@ -145,6 +189,111 @@ export default function AppDetail() {
         <p style={{ marginTop: '0.75rem', marginBottom: 0, fontSize: '0.875rem' }}>
           <Link to="/apps/validate-token" style={{ color: 'var(--accent)' }}>Validate a token →</Link>
         </p>
+      </div>
+
+      <div className="card" style={{ marginBottom: '1rem' }}>
+        <h3 style={{ marginTop: 0 }}>Servers</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1rem' }}>
+          Instances of this app that users host. Your IP is captured when you create a server.
+        </p>
+        <form onSubmit={handleCreateServer} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxWidth: 480, marginBottom: '1.5rem' }}>
+          <div>
+            <label htmlFor="server-name">Server name</label>
+            <input
+              id="server-name"
+              value={serverName}
+              onChange={(e) => setServerName(e.target.value)}
+              placeholder="My Server"
+            />
+          </div>
+          <div>
+            <label htmlFor="server-description">Description</label>
+            <textarea
+              id="server-description"
+              value={serverDescription}
+              onChange={(e) => setServerDescription(e.target.value)}
+              placeholder="Optional"
+              rows={2}
+            />
+          </div>
+          <div>
+            <label>Game modes (key-value pairs)</label>
+            {gameModesEntries.map((entry) => (
+              <div
+                key={entry.id}
+                style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}
+              >
+                <input
+                  value={entry.key}
+                  onChange={(e) => updateGameModeEntry(entry.id, 'key', e.target.value)}
+                  placeholder="Key"
+                  style={{ flex: 1, minWidth: 0 }}
+                />
+                <input
+                  value={entry.value}
+                  onChange={(e) => updateGameModeEntry(entry.id, 'value', e.target.value)}
+                  placeholder="Value"
+                  style={{ flex: 1, minWidth: 0 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeGameModeRow(entry.id)}
+                  style={{ background: 'var(--surface)', color: 'var(--text-muted)', border: '1px solid var(--border)', padding: '0.5rem 0.75rem' }}
+                  title="Remove row"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <button type="button" onClick={addGameModeRow} style={{ background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)', marginTop: '0.25rem' }}>
+              + Add game mode
+            </button>
+          </div>
+          <button type="submit" disabled={createServer.isPending || !serverName.trim()}>
+            {createServer.isPending ? 'Creating…' : 'Add server'}
+          </button>
+          {createServer.isError && (
+            <p style={{ color: 'var(--error)', fontSize: '0.875rem' }}>
+              {createServer.error instanceof Error ? createServer.error.message : 'Failed'}
+            </p>
+          )}
+        </form>
+        {serversLoading && <p>Loading servers…</p>}
+        {servers && servers.length === 0 && !serversLoading && (
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>No servers yet.</p>
+        )}
+        {servers && servers.length > 0 && (
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {servers.map((s) => (
+              <li
+                key={s.server_id}
+                style={{
+                  padding: '0.75rem',
+                  fontSize: '0.875rem',
+                  border: '1px solid var(--border)',
+                  borderRadius: 8,
+                  background: 'var(--surface)',
+                  borderLeft: '3px solid var(--accent)',
+                }}
+              >
+                <strong>{s.server_name}</strong>
+                {s.server_description && <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem' }}>— {s.server_description}</span>}
+                <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>
+                  by {s.created_by_username}
+                  {s.ip_address && ` · ${s.ip_address}`}
+                  {' · '}{formatDate(s.created_at)}
+                </p>
+                {s.game_modes && Object.keys(s.game_modes).length > 0 && (
+                  <ul style={{ margin: '0.25rem 0 0', paddingLeft: '1.25rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    {Object.entries(s.game_modes).map(([k, v]) => (
+                      <li key={k}>{k}: {v}</li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {isOwner && (

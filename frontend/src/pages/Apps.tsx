@@ -1,9 +1,68 @@
 import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { useApps } from '../api/hooks'
+import { useApps, useServers } from '../api/hooks'
 
 function formatDate(s: string) {
   return new Date(s).toLocaleString()
+}
+
+function ServerListForApp({ appId }: { appId: string }) {
+  const { data: servers, isLoading } = useServers(appId)
+  if (isLoading) return <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0.5rem 0 0' }}>Loading servers…</p>
+  if (!servers?.length) {
+    return (
+      <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0.5rem 0 0' }}>
+        No active servers
+      </p>
+    )
+  }
+  return (
+    <div
+      style={{
+        marginTop: '0.5rem',
+        border: '1px solid var(--border)',
+        borderRadius: 8,
+        padding: '0.75rem',
+        background: 'var(--bg)',
+      }}
+    >
+      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 0.5rem', fontWeight: 600 }}>
+        Active servers ({servers.length})
+      </p>
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        {servers.map((s) => (
+          <li
+            key={s.server_id}
+            style={{
+              fontSize: '0.875rem',
+              padding: '0.6rem 0.75rem',
+              background: 'var(--surface)',
+              borderRadius: 6,
+              border: '1px solid var(--border)',
+              borderLeft: '3px solid var(--accent)',
+            }}
+          >
+            <strong>{s.server_name}</strong>
+            {s.server_description && (
+              <span style={{ color: 'var(--text-muted)', marginLeft: '0.35rem' }}>— {s.server_description}</span>
+            )}
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              Hosted by {s.created_by_username}
+              {s.ip_address && ` · ${s.ip_address}`}
+              {' · '}{formatDate(s.created_at)}
+            </p>
+            {s.game_modes && Object.keys(s.game_modes).length > 0 && (
+              <ul style={{ margin: '0.25rem 0 0', paddingLeft: '1.25rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {Object.entries(s.game_modes).map(([k, v]) => (
+                  <li key={k}>{k}: {v}</li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
 export default function Apps() {
@@ -55,7 +114,7 @@ export default function Apps() {
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
-                  <div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <Link to={`/apps/${app.app_id}`} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
                       {app.name}
                     </Link>
@@ -70,6 +129,7 @@ export default function Apps() {
                     <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       by {app.created_by_username} · updated {formatDate(app.updated_at)}
                     </p>
+                    <ServerListForApp appId={app.app_id} />
                   </div>
                   <Link
                     to={`/apps/${app.app_id}`}
@@ -80,6 +140,7 @@ export default function Apps() {
                       borderRadius: 8,
                       textDecoration: 'none',
                       fontSize: '0.875rem',
+                      flexShrink: 0,
                     }}
                   >
                     {isOwner ? 'Manage' : 'View'}

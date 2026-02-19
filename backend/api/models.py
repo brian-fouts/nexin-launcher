@@ -114,6 +114,35 @@ class App(models.Model):
         self.save()
 
 
+class Server(models.Model):
+    """An instance of an app that a user hosts. Created by a user; IP captured at creation."""
+
+    server_id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        db_column="server_id",
+    )
+    app = models.ForeignKey(App, on_delete=models.CASCADE, related_name="servers")
+    server_name = models.CharField(max_length=255)
+    server_description = models.TextField(blank=True)
+    game_modes = models.JSONField(default=dict, blank=True)  # free-form key-value pairs
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="created_servers",
+    )
+    ip_address = models.GenericIPAddressField(null=True, blank=True, unpack_ipv4=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "api_server"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.server_name
+
+
 class OneTimeToken(models.Model):
     """Stored jti for one-time JWTs. One valid per (user, app); deleted when token is used."""
 

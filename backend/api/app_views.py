@@ -3,8 +3,14 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import App, generate_app_secret
-from .serializers import AppCreateSerializer, AppListSerializer, AppUpdateSerializer
+from .models import App, Server, generate_app_secret
+from .serializers import (
+    AppCreateSerializer,
+    AppListSerializer,
+    AppUpdateSerializer,
+    ServerCreateSerializer,
+    ServerSerializer,
+)
 
 
 def _is_owner(request, app):
@@ -77,3 +83,67 @@ def app_regenerate_secret(request, app_id):
     plaintext_secret = generate_app_secret()
     app.set_app_secret(plaintext_secret)
     return Response({"app_secret": plaintext_secret})
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def server_list(request, app_id):
+    """List servers for an app, or create a server (any user). IP captured from request on create."""
+    try:
+        app = App.objects.get(app_id=app_id)
+    except App.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == "GET":
+        servers = Server.objects.select_related("app", "created_by").filter(app=app)
+        serializer = ServerSerializer(servers, many=True)
+        return Response(serializer.data)
+
+    if request.method == "POST":
+        serializer = ServerCreateSerializer(
+            data=request.data,
+            context={"request": request, "app": app},
+        )
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        server = serializer.save()
+        return Response(ServerSerializer(server).data, status=status.HTTP_201_CREATED)
+
+    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+@api_view(["GET", "PATCH", "DELETE"])
+@permission_classes([IsAuthenticated])
+def server_detail(request, app_id, server_id):
+    """Get, update, or delete a server. Only creator can PATCH/DELETE."""
+    try:
+        app = App.objects.get(app_id=app_id)
+    except App.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    try:
+        server = Server.objects.select_related("app", "created_by").get(server_id=server_id, app=app)
+    except Server.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == "GET":
+        serializer = ServerSerializer(server)
+        return Response(serializer.data)
+
+    if server.created_by_id != request.user.user_id:
+        return Response(
+            {"detail": "Only the server creator can modify or delete it."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    if request.method == "PATCH":
+        serializer = ServerSerializer(server, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(ServerSerializer(server).data)
+
+    if request.method == "DELETE":
+        server.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
