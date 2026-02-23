@@ -1,10 +1,20 @@
+import logging
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+class FlushingStreamHandler(logging.StreamHandler):
+    """StreamHandler that flushes after each emit so logs appear immediately (no buffering)."""
+
+    def emit(self, record):
+        super().emit(record)
+        self.flush()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -91,6 +101,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
     "DEFAULT_AUTHENTICATION_CLASSES": [
+        "api.authentication.AppJWTAuthentication",  # app JWT first (token_type "app")
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
 }
@@ -106,3 +117,24 @@ CORS_ALLOWED_ORIGINS = os.environ.get(
     "CORS_ORIGINS",
     "http://localhost:5173,http://127.0.0.1:5173,http://frontend:5173",
 ).split(",")
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "format": "%(asctime)s %(levelname)s %(name)s %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "()": FlushingStreamHandler,
+            "stream": sys.stderr,
+            "formatter": "default",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+}

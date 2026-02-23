@@ -4,8 +4,8 @@ import { useAuth } from '../contexts/AuthContext'
 import { useLogin } from '../api/hooks'
 
 export default function Login() {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('test')
+  const [password, setPassword] = useState('test')
   const navigate = useNavigate()
   const { setUserFromResponse } = useAuth()
   const login = useLogin()

@@ -131,8 +131,12 @@ class Server(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="created_servers",
+        null=True,
+        blank=True,
     )
     ip_address = models.GenericIPAddressField(null=True, blank=True, unpack_ipv4=True)
+    port = models.PositiveIntegerField(null=True, blank=True)
+    game_frontend_url = models.URLField(max_length=512, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

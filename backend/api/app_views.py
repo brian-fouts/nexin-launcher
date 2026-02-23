@@ -4,9 +4,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import App, Server, generate_app_secret
+from .permissions import IsAppAuthenticated
 from .serializers import (
     AppCreateSerializer,
     AppListSerializer,
+    AppServerCreateSerializer,
     AppUpdateSerializer,
     ServerCreateSerializer,
     ServerSerializer,
@@ -83,6 +85,23 @@ def app_regenerate_secret(request, app_id):
     plaintext_secret = generate_app_secret()
     app.set_app_secret(plaintext_secret)
     return Response({"app_secret": plaintext_secret})
+
+
+@api_view(["POST"])
+@permission_classes([IsAppAuthenticated])
+def app_server_create(request):
+    """
+    Create a server for the authenticated app (game server self-registration).
+    Requires app JWT. Body: server_name, server_description, game_modes.
+    """
+    serializer = AppServerCreateSerializer(
+        data=request.data,
+        context={"request": request},
+    )
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    server = serializer.save()
+    return Response(ServerSerializer(server).data, status=status.HTTP_201_CREATED)
 
 
 @api_view(["GET", "POST"])

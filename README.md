@@ -40,6 +40,11 @@ The frontend proxies `/api` to the backend in dev, so the UI works without CORS.
   After pulling changes that touch backend config, rebuild so the container uses the latest code:  
   `docker-compose build --no-cache backend && docker-compose up`
 
+- **App authentication**: Apps can obtain a JWT that authenticates as the app (for server-to-server or programmatic access).  
+  **POST** `/api/v1/auth/app-token/` with body `{ "app_id": "<uuid>", "app_secret": "<plaintext>" }` (no user auth).  
+  Response: `{ "access": "<jwt>", "expires_in": 3600 }`. Use the token in the `Authorization: Bearer <access>` header.  
+  The backend treats this as app-authenticated: `request.app` is set and `request.user` is anonymous. Use the `IsAppAuthenticated` or `IsAuthenticatedOrApp` permission classes for endpoints that accept app tokens.
+
 ## Frontend
 
 - **API usage**: All API access goes through `frontend/src/api/`:

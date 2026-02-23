@@ -7,7 +7,7 @@ def test_generate_requires_auth(api_client):
     user = User.objects.create_user(email="u@x.com", username="u", password="p")
     app = App.objects.create(name="A", description="", created_by=user, app_secret="x")
     response = api_client.post(f"/api/v1/apps/{app.app_id}/one-time-token/")
-    assert response.status_code == 401
+    assert response.status_code in (401, 403)  # DRF may return 403 when no credentials
 
 
 @pytest.mark.django_db

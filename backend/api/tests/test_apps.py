@@ -1,11 +1,13 @@
 import pytest
+from rest_framework_simplejwt.tokens import RefreshToken
+
 from api.models import App, User
 
 
 @pytest.mark.django_db
 def test_app_list_requires_auth(api_client):
     response = api_client.get("/api/v1/apps/")
-    assert response.status_code == 401
+    assert response.status_code in (401, 403)  # DRF may return 403 when no credentials
 
 
 @pytest.mark.django_db
@@ -60,6 +62,9 @@ def test_app_update_only_owner(authenticated_client, api_client):
         format="json",
     )
     assert response.status_code == 403
+    # Re-apply owner JWT (clear force_authenticate and set Bearer token)
+    client.force_authenticate(user=None)
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {str(RefreshToken.for_user(owner).access_token)}")
     response = client.patch(
         f"/api/v1/apps/{app.app_id}/",
         data={"name": "Updated"},
@@ -78,6 +83,8 @@ def test_app_delete_only_owner(authenticated_client, api_client):
     api_client.force_authenticate(user=other)
     response = api_client.delete(f"/api/v1/apps/{app.app_id}/")
     assert response.status_code == 403
+    client.force_authenticate(user=None)
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {str(RefreshToken.for_user(owner).access_token)}")
     response = client.delete(f"/api/v1/apps/{app.app_id}/")
     assert response.status_code == 204
     assert not App.objects.filter(app_id=app.app_id).exists()

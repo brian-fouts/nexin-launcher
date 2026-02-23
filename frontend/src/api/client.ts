@@ -105,6 +105,17 @@ export interface AuthResponse {
   tokens: AuthTokens
 }
 
+/** Exchange app_id + app_secret for a JWT that authenticates as the app. No user auth required. */
+export interface AppTokenPayload {
+  app_id: string
+  app_secret: string
+}
+
+export interface AppTokenResponse {
+  access: string
+  expires_in: number
+}
+
 // --- App types ---
 
 export interface App {
@@ -136,9 +147,11 @@ export interface Server {
   server_name: string
   server_description: string
   game_modes: Record<string, string>
-  created_by_id: string
-  created_by_username: string
+  created_by_id: string | null
+  created_by_username: string | null
   ip_address: string | null
+  port: number | null
+  game_frontend_url: string | null
   created_at: string
 }
 
@@ -146,12 +159,16 @@ export interface ServerCreate {
   server_name: string
   server_description?: string
   game_modes?: Record<string, string>
+  port?: number
+  game_frontend_url?: string | null
 }
 
 export interface ServerUpdate {
   server_name?: string
   server_description?: string
   game_modes?: Record<string, string>
+  port?: number
+  game_frontend_url?: string | null
 }
 
 // --- Endpoints ---
@@ -178,6 +195,13 @@ export const api = {
       return request<AuthTokens>(`${API_V1}/auth/token/refresh/`, {
         method: 'POST',
         body: JSON.stringify({ refresh: refreshToken }),
+      })
+    },
+    /** Exchange app_id and app_secret for a JWT that authenticates as the app (Bearer token). */
+    appToken(payload: AppTokenPayload): Promise<AppTokenResponse> {
+      return request<AppTokenResponse>(`${API_V1}/auth/app-token/`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
       })
     },
   },

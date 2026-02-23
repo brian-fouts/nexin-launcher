@@ -279,8 +279,9 @@ export default function AppDetail() {
                 <strong>{s.server_name}</strong>
                 {s.server_description && <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem' }}>— {s.server_description}</span>}
                 <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)' }}>
-                  by {s.created_by_username}
+                  by {s.created_by_username ?? '—'}
                   {s.ip_address && ` · ${s.ip_address}`}
+                  {s.port != null && ` · Port ${s.port}`}
                   {' · '}{formatDate(s.created_at)}
                 </p>
                 {s.game_modes && Object.keys(s.game_modes).length > 0 && (
@@ -289,6 +290,31 @@ export default function AppDetail() {
                       <li key={k}>{k}: {v}</li>
                     ))}
                   </ul>
+                )}
+                {s.game_frontend_url && (
+                  <p style={{ margin: '0.5rem 0 0' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!appId) return
+                        generateOneTimeToken.mutate(appId, {
+                          onSuccess: (data) => {
+                            const base = s.game_frontend_url!.replace(/\/$/, '')
+                            window.open(`${base}/login?ticket=${encodeURIComponent(data.token)}`, '_blank', 'noopener,noreferrer')
+                          },
+                        })
+                      }}
+                      disabled={generateOneTimeToken.isPending}
+                      style={{ fontSize: '0.8125rem', padding: '0.35rem 0.6rem' }}
+                    >
+                      {generateOneTimeToken.isPending ? 'Generating…' : 'Join'}
+                    </button>
+                    {generateOneTimeToken.isError && (
+                      <span style={{ marginLeft: '0.5rem', color: 'var(--error)', fontSize: '0.75rem' }}>
+                        {generateOneTimeToken.error instanceof Error ? generateOneTimeToken.error.message : 'Failed'}
+                      </span>
+                    )}
+                  </p>
                 )}
               </li>
             ))}

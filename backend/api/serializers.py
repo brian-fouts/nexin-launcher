@@ -91,11 +91,11 @@ class AppUpdateSerializer(serializers.ModelSerializer):
 
 
 class ServerSerializer(serializers.ModelSerializer):
-    """Server list/detail; include app_id and creator username."""
+    """Server list/detail; include app_id and creator username (null when created by app)."""
 
     app_id = serializers.UUIDField(source="app.app_id", read_only=True)
-    created_by_username = serializers.CharField(source="created_by.username", read_only=True)
-    created_by_id = serializers.UUIDField(source="created_by.user_id", read_only=True)
+    created_by_username = serializers.SerializerMethodField()
+    created_by_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Server
@@ -108,9 +108,17 @@ class ServerSerializer(serializers.ModelSerializer):
             "created_by_id",
             "created_by_username",
             "ip_address",
+            "port",
+            "game_frontend_url",
             "created_at",
         ]
         read_only_fields = ["server_id", "app_id", "created_by_id", "created_by_username", "ip_address", "created_at"]
+
+    def get_created_by_username(self, obj):
+        return obj.created_by.username if obj.created_by_id else None
+
+    def get_created_by_id(self, obj):
+        return str(obj.created_by.user_id) if obj.created_by_id else None
 
 
 class ServerCreateSerializer(serializers.ModelSerializer):
@@ -118,13 +126,15 @@ class ServerCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Server
-        fields = ["server_name", "server_description", "game_modes"]
+        fields = ["server_name", "server_description", "game_modes", "port", "game_frontend_url"]
 
     def create(self, validated_data):
         request = self.context.get("request")
         app = self.context.get("app")
         user = request.user
         ip = _get_client_ip(request)
+        port = validated_data.pop("port", None)
+        game_frontend_url = validated_data.pop("game_frontend_url", None) or ""
         return Server.objects.create(
             app=app,
             server_name=validated_data["server_name"],
@@ -132,6 +142,35 @@ class ServerCreateSerializer(serializers.ModelSerializer):
             game_modes=validated_data.get("game_modes") or {},
             created_by=user,
             ip_address=ip or None,
+            port=port,
+            game_frontend_url=game_frontend_url or None,
+        )
+
+
+class AppServerCreateSerializer(serializers.ModelSerializer):
+    """Create server via app JWT; app from request.app, no user creator."""
+
+    class Meta:
+        model = Server
+        fields = ["server_name", "server_description", "game_modes", "port", "game_frontend_url"]
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        app = getattr(request, "app", None)
+        if not app:
+            raise serializers.ValidationError("App authentication required.")
+        ip = _get_client_ip(request)
+        port = validated_data.pop("port", None)
+        game_frontend_url = validated_data.pop("game_frontend_url", None) or ""
+        return Server.objects.create(
+            app=app,
+            server_name=validated_data["server_name"],
+            server_description=validated_data.get("server_description", ""),
+            game_modes=validated_data.get("game_modes") or {},
+            created_by=None,
+            ip_address=ip or None,
+            port=port,
+            game_frontend_url=game_frontend_url or None,
         )
 
 

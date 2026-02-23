@@ -10,7 +10,7 @@ from urllib.error import HTTPError
 @pytest.mark.django_db
 def test_login_missing_ticket_returns_401():
     client = Client()
-    response = client.get("/api/v1/login/")
+    response = client.post("/api/v1/login/", data=b"{}", content_type="application/json")
     assert response.status_code == 401
     assert response.json()["detail"] == "Missing ticket."
 
@@ -31,7 +31,11 @@ def test_login_success_forwards_backend_response():
 
     mock_resp = MockResponse()
     with patch("games.views.urllib.request.urlopen", return_value=mock_resp):
-        response = client.get("/api/v1/login/", {"ticket": "some-token"})
+        response = client.post(
+            "/api/v1/login/",
+            data=json.dumps({"ticket": "some-token"}),
+            content_type="application/json",
+        )
 
     assert response.status_code == 200
     assert response.json() == payload
@@ -52,7 +56,11 @@ def test_login_backend_error_returns_401():
         )
 
     with patch("games.views.urllib.request.urlopen", side_effect=raise_401):
-        response = client.get("/api/v1/login/", {"ticket": "expired-token"})
+        response = client.post(
+            "/api/v1/login/",
+            data=json.dumps({"ticket": "expired-token"}),
+            content_type="application/json",
+        )
 
     assert response.status_code == 401
     assert response.json()["detail"] == "Token has expired."

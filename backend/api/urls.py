@@ -1,13 +1,15 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from . import app_views, auth_views, one_time_token_views, views
+from . import app_auth_views, app_views, auth_views, one_time_token_views, views
 
 urlpatterns = [
     path("health/", views.health),
     path("auth/register/", auth_views.register),
     path("auth/login/", auth_views.login),
     path("auth/token/refresh/", TokenRefreshView.as_view()),
+    path("auth/app-token/", app_auth_views.app_token),
+    path("app/server/", app_views.app_server_create),
     path("items/", views.item_list),
     path("items/<int:pk>/", views.item_detail),
     path("apps/", app_views.app_list),

@@ -14,13 +14,13 @@ def health(request):
     return Response({"status": "ok", "service": "game-backend"})
 
 
-@api_view(["GET"])
+@api_view(["POST"])
 def login(request):
     """
     Validate a one-time ticket by calling the backend's one-time-token/validate endpoint.
-    GET ?ticket=<token>. On success returns user_id, username, app_id; on failure returns 401.
+    POST body: {"ticket": "<token>"}. On success returns user_id, username, app_id; on failure returns 401.
     """
-    ticket = request.query_params.get("ticket")
+    ticket = request.data.get("ticket") if request.data else None
     if not ticket:
         return Response(
             {"detail": "Missing ticket."},
