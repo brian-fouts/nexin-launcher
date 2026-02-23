@@ -13,9 +13,9 @@ services:
       timeout: 5s
       retries: 5
 
-  backend:
+  matchmaker-backend:
     build:
-      context: ./backend
+      context: ./matchmaker-backend
       dockerfile: Dockerfile
     environment:
       POSTGRES_DB: nexin
@@ -25,9 +25,15 @@ services:
       POSTGRES_PORT: "5432"
       DJANGO_SECRET_KEY: change-me-in-production
       DEBUG: "true"
-      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://frontend:5173
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://matchmaker-frontend:5173
     depends_on:
       db: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     command: >
       sh -c "python manage.py migrate --noinput &&
              gunicorn --bind 0.0.0.0:8000 --workers 2 config.wsgi:application"
@@ -46,7 +52,7 @@ services:
       POSTGRES_PORT: "5432"
       MATCHMAKING_APP_ID: d7809d24-8742-485a-b7c9-daac07f21858
       MATCHMAKING_SECRET: 73-uVWzErkplHYdnYWoebwLrNA46V87DIBCe5BHpeMQ
-      BACKEND_URL: http://backend:8000
+      BACKEND_URL: http://matchmaker-backend:8000
       SERVER_NAME: "Nexin Game Server"
       SERVER_DESCRIPTION: "Default game server for matchmaking"
       SERVER_GAME_MODES: '{"mode": "deathmatch"}'
@@ -54,10 +60,10 @@ services:
       GAME_FRONTEND_URL: "http://localhost:5174"
       DJANGO_SECRET_KEY: change-me-in-production
       DEBUG: "true"
-      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://frontend:5173,http://localhost:5174,http://127.0.0.1:5174,http://game-frontend:5174
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://matchmaker-frontend:5173,http://localhost:5174,http://127.0.0.1:5174,http://game-frontend:5174
     depends_on:
       db: { condition: service_healthy }
-      backend: { condition: service_started }
+      matchmaker-backend: { condition: service_healthy }
     command: >
       sh -c "python manage.py migrate --noinput &&
              python manage.py register_with_matchmaker &&
@@ -65,18 +71,18 @@ services:
     ports:
       - "8001:8001"
 
-  frontend:
+  matchmaker-frontend:
     build:
-      context: ./frontend
+      context: ./matchmaker-frontend
       dockerfile: Dockerfile
     environment:
-      BACKEND_URL: http://backend:8000
+      BACKEND_URL: http://matchmaker-backend:8000
     depends_on:
-      - backend
+      - matchmaker-backend
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend:/app
+      - ./matchmaker-frontend:/app
       - /app/node_modules
 
   game-frontend:

@@ -57,4 +57,12 @@ export const gameApi = {
       body: JSON.stringify({ ticket }),
     })
   },
+
+  /** Report that the current user is still online. Call every ~10s while on the game page. */
+  heartbeat(userId: string): Promise<void> {
+    return request<void>(`${API_V1}/heartbeat/`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId }),
+    })
+  },
 }

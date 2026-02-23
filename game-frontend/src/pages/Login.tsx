@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { gameApi, ApiError, type LoginResponse } from '../api/client'
+import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
   const [searchParams] = useSearchParams()
   const ticket = searchParams.get('ticket')
+  const { setUser } = useAuth()
 
   const [result, setResult] = useState<LoginResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -37,6 +39,7 @@ export default function Login() {
       .then((data) => {
         if (!cancelledRef.current) {
           setResult(data)
+          setUser(data)
           setLoading(false)
         }
       })

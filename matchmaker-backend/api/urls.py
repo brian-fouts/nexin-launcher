@@ -10,6 +10,8 @@ urlpatterns = [
     path("auth/token/refresh/", TokenRefreshView.as_view()),
     path("auth/app-token/", app_auth_views.app_token),
     path("app/server/", app_views.app_server_create),
+    path("app/activity/", app_views.app_activity),
+    path("app/online-users/", app_views.app_online_users),
     path("items/", views.item_list),
     path("items/<int:pk>/", views.item_detail),
     path("apps/", app_views.app_list),

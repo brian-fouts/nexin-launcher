@@ -91,11 +91,11 @@ REST_FRAMEWORK = {
 
 CORS_ALLOWED_ORIGINS = os.environ.get(
     "CORS_ORIGINS",
-    "http://localhost:5173,http://127.0.0.1:5173,http://frontend:5173",
+    "http://localhost:5173,http://127.0.0.1:5173,http://matchmaker-frontend:5173",
 ).split(",")
 
 # Backend service URL for one-time-token validation and matchmaker registration.
-BACKEND_URL = os.environ.get("BACKEND_URL", "http://backend:8000").rstrip("/")
+BACKEND_URL = os.environ.get("BACKEND_URL", "http://matchmaker-backend:8000").rstrip("/")
 
 # Matchmaker app credentials: used to obtain app JWT and register this game server.
 MATCHMAKING_APP_ID = os.environ.get("MATCHMAKING_APP_ID", "")

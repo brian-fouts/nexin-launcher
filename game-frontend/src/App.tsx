@@ -1,12 +1,33 @@
+import { useEffect } from 'react'
 import { Link, Route, Routes } from 'react-router-dom'
+import { gameApi } from './api/client'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import Health from './pages/Health'
 import Home from './pages/Home'
 import Login from './pages/Login'
 
+function HeartbeatPoll() {
+  const { user } = useAuth()
+  useEffect(() => {
+    if (!user?.user_id) return
+    const tick = () => {
+      gameApi.heartbeat(user.user_id).catch(() => {
+        // ignore; will retry next interval
+      })
+    }
+    tick()
+    const id = setInterval(tick, 10_000)
+    return () => clearInterval(id)
+  }, [user?.user_id])
+  return null
+}
+
 function App() {
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <nav
+    <AuthProvider>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <HeartbeatPoll />
+        <nav
         style={{
           borderBottom: '1px solid var(--border)',
           padding: '1rem 1.5rem',
@@ -33,6 +54,7 @@ function App() {
         </Routes>
       </main>
     </div>
+    </AuthProvider>
   )
 }
 

@@ -1,10 +1,19 @@
+import uuid
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import App, Server, generate_app_secret
+from .activity_store import get_online_user_ids, record_activity
+from .models import App, User, generate_app_secret
 from .permissions import IsAppAuthenticated
+from .server_store import (
+    add_server as store_add_server,
+    delete_server as store_delete_server,
+    get_server as store_get_server,
+    list_servers as store_list_servers,
+    update_server as store_update_server,
+)
 from .serializers import (
     AppCreateSerializer,
     AppListSerializer,
@@ -13,6 +22,7 @@ from .serializers import (
     ServerCreateSerializer,
     ServerSerializer,
 )
+from .serializers import _get_client_ip
 
 
 def _is_owner(request, app):
@@ -92,7 +102,8 @@ def app_regenerate_secret(request, app_id):
 def app_server_create(request):
     """
     Create a server for the authenticated app (game server self-registration).
-    Requires app JWT. Body: server_name, server_description, game_modes.
+    Requires app JWT. Body: server_name, server_description, game_modes, port, game_frontend_url.
+    Stored in memory; cleared on backend restart.
     """
     serializer = AppServerCreateSerializer(
         data=request.data,
@@ -100,23 +111,80 @@ def app_server_create(request):
     )
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    server = serializer.save()
-    return Response(ServerSerializer(server).data, status=status.HTTP_201_CREATED)
+    data = serializer.validated_data
+    app = getattr(request, "app", None)
+    if not app:
+        return Response({"detail": "App authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+    ip = _get_client_ip(request)
+    entry = store_add_server(
+        app_id=app.app_id,
+        server_name=data["server_name"],
+        server_description=data.get("server_description", ""),
+        game_modes=data.get("game_modes") or {},
+        created_by_id=None,
+        created_by_username=None,
+        ip_address=ip or None,
+        port=data.get("port"),
+        game_frontend_url=data.get("game_frontend_url") or None,
+    )
+    return Response(entry, status=status.HTTP_201_CREATED)
+
+
+@api_view(["POST"])
+@permission_classes([IsAppAuthenticated])
+def app_activity(request):
+    """
+    Record that a user is active for the authenticated app (e.g. game-backend reports after login).
+    Body: { "user_id": "<uuid>" }. A user is "online" if they have activity within 15 seconds.
+    """
+    user_id_str = request.data.get("user_id") if request.data else None
+    if not user_id_str:
+        return Response({"detail": "user_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        user_id = uuid.UUID(user_id_str)
+    except (TypeError, ValueError):
+        return Response({"detail": "user_id must be a valid UUID."}, status=status.HTTP_400_BAD_REQUEST)
+    app = getattr(request, "app", None)
+    if not app:
+        return Response({"detail": "App authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+    if not User.objects.filter(user_id=user_id).exists():
+        return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+    record_activity(app.app_id, user_id)
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(["GET"])
+@permission_classes([IsAppAuthenticated])
+def app_online_users(request):
+    """
+    Return users considered "online" for the authenticated app (activity within 15 seconds).
+    Response: [ { "user_id": "<uuid>", "username": "..." }, ... ]
+    """
+    app = getattr(request, "app", None)
+    if not app:
+        return Response({"detail": "App authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+    user_ids = get_online_user_ids(app.app_id)
+    users = User.objects.filter(user_id__in=user_ids).values("user_id", "username")
+    user_map = {str(u["user_id"]): u["username"] for u in users}
+    result = [
+        {"user_id": str(uid), "username": user_map.get(str(uid), "")}
+        for uid in user_ids
+    ]
+    return Response(result)
 
 
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def server_list(request, app_id):
-    """List servers for an app, or create a server (any user). IP captured from request on create."""
+    """List servers for an app, or create a server (any user). Stored in memory; cleared on backend restart."""
     try:
         app = App.objects.get(app_id=app_id)
     except App.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     if request.method == "GET":
-        servers = Server.objects.select_related("app", "created_by").filter(app=app)
-        serializer = ServerSerializer(servers, many=True)
-        return Response(serializer.data)
+        servers = store_list_servers(app_id)
+        return Response(servers)
 
     if request.method == "POST":
         serializer = ServerCreateSerializer(
@@ -125,8 +193,21 @@ def server_list(request, app_id):
         )
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        server = serializer.save()
-        return Response(ServerSerializer(server).data, status=status.HTTP_201_CREATED)
+        data = serializer.validated_data
+        ip = _get_client_ip(request)
+        user = request.user
+        entry = store_add_server(
+            app_id=app.app_id,
+            server_name=data["server_name"],
+            server_description=data.get("server_description", ""),
+            game_modes=data.get("game_modes") or {},
+            created_by_id=user.user_id,
+            created_by_username=user.username,
+            ip_address=ip or None,
+            port=data.get("port"),
+            game_frontend_url=data.get("game_frontend_url") or None,
+        )
+        return Response(entry, status=status.HTTP_201_CREATED)
 
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
@@ -134,35 +215,36 @@ def server_list(request, app_id):
 @api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([IsAuthenticated])
 def server_detail(request, app_id, server_id):
-    """Get, update, or delete a server. Only creator can PATCH/DELETE."""
+    """Get, update, or delete a server. Only creator can PATCH/DELETE. Data is in memory."""
     try:
         app = App.objects.get(app_id=app_id)
     except App.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
-    try:
-        server = Server.objects.select_related("app", "created_by").get(server_id=server_id, app=app)
-    except Server.DoesNotExist:
+
+    server = store_get_server(app_id, server_id)
+    if not server:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     if request.method == "GET":
-        serializer = ServerSerializer(server)
-        return Response(serializer.data)
+        return Response(server)
 
-    if server.created_by_id != request.user.user_id:
+    created_by_id = server.get("created_by_id")
+    if created_by_id is not None and str(request.user.user_id) != created_by_id:
         return Response(
             {"detail": "Only the server creator can modify or delete it."},
             status=status.HTTP_403_FORBIDDEN,
         )
 
     if request.method == "PATCH":
-        serializer = ServerSerializer(server, data=request.data, partial=True)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        serializer.save()
-        return Response(ServerSerializer(server).data)
+        update_data = {}
+        for key in ("server_name", "server_description", "game_modes", "port", "game_frontend_url"):
+            if key in request.data:
+                update_data[key] = request.data[key]
+        updated = store_update_server(app_id, server_id, update_data)
+        return Response(updated)
 
     if request.method == "DELETE":
-        server.delete()
+        store_delete_server(app_id, server_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
