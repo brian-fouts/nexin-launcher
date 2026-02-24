@@ -102,6 +102,28 @@ MATCHMAKING_APP_ID = os.environ.get("MATCHMAKING_APP_ID", "")
 MATCHMAKING_SECRET = os.environ.get("MATCHMAKING_SECRET", "")
 
 # Server registration (sent to backend when registering with matchmaker).
+# When the game registers with the matchmaker it is assigned a UUID server_id; that value
+# is read from MATCHMAKER_SERVER_ID (env) or from the file written by register_with_matchmaker.
+MATCHMAKER_SERVER_ID_FILE = os.environ.get(
+    "MATCHMAKER_SERVER_ID_FILE",
+    str(BASE_DIR / "data" / "matchmaker_server_id.txt"),
+)
+
+
+def _get_matchmaker_server_id() -> str:
+    env_id = os.environ.get("MATCHMAKER_SERVER_ID", "").strip()
+    if env_id:
+        return env_id
+    path = Path(MATCHMAKER_SERVER_ID_FILE)
+    if path.exists():
+        try:
+            return path.read_text().strip()
+        except OSError:
+            pass
+    return ""
+
+
+MATCHMAKER_SERVER_ID = _get_matchmaker_server_id()
 SERVER_NAME = os.environ.get("SERVER_NAME", "Game Server")
 SERVER_DESCRIPTION = os.environ.get("SERVER_DESCRIPTION", "")
 # JSON-encoded key-value pairs for game modes, e.g. '{"mode": "deathmatch"}'.

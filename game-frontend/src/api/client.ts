@@ -51,18 +51,20 @@ export const gameApi = {
     return request<HealthResponse>(`${API_V1}/health/`)
   },
 
-  login(ticket: string): Promise<LoginResponse> {
+  login(ticket: string, serverId?: string): Promise<LoginResponse> {
+    const body: { ticket: string; server_id?: string } = { ticket }
+    if (serverId) body.server_id = serverId
     return request<LoginResponse>(`${API_V1}/login/`, {
       method: 'POST',
-      body: JSON.stringify({ ticket }),
+      body: JSON.stringify(body),
     })
   },
 
-  /** Report that the current user is still online. Call every ~10s while on the game page. */
-  heartbeat(userId: string): Promise<void> {
+  /** Report that the current user is still online on this server. Call every ~10s while on the game page. */
+  heartbeat(userId: string, serverId: string): Promise<void> {
     return request<void>(`${API_V1}/heartbeat/`, {
       method: 'POST',
-      body: JSON.stringify({ user_id: userId }),
+      body: JSON.stringify({ user_id: userId, server_id: serverId }),
     })
   },
 }

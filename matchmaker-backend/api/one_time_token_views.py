@@ -43,11 +43,13 @@ def one_time_token_generate(request, app_id):
     OneTimeToken.objects.filter(user=user, app=app).delete()
     OneTimeToken.objects.create(jti=jti, user=user, app=app, expires_at=expires_at)
     logger.info(
-        "one-time token created in database: jti=%s user_id=%s app_id=%s expires_at=%s (exp_ts=%s)",
+        "one-time token generated: jti=%s user_id=%s app_id=%s issued_at=%s expires_at=%s (iat_ts=%s exp_ts=%s)",
         jti,
         user.user_id,
         app.app_id,
+        now,
         expires_at,
+        iat_ts,
         exp_ts,
     )
 
@@ -98,7 +100,7 @@ def one_time_token_validate(request):
             exp_ts = unverified.get("exp")
             exp_dt = datetime.fromtimestamp(exp_ts, tz=timezone.utc) if exp_ts is not None else None
             logger.error(
-                "one-time-token/validate failed: token has expired — compared JWT exp=%s (exp_ts=%s) vs now=%s; exp < now => rejected",
+                "one-time-token/validate failed: token has expired — JWT exp=%s (exp_ts=%s) vs now=%s; exp < now => rejected.",
                 exp_dt,
                 exp_ts,
                 now,

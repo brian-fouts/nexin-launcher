@@ -6,6 +6,7 @@ import json
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 from django.conf import settings
@@ -47,14 +48,14 @@ def _get_app_token() -> str | None:
     return access
 
 
-def report_activity(user_id: str) -> bool:
-    """Report that this user is active for our app. Returns True if the request succeeded."""
+def report_activity(user_id: str, server_id: str) -> bool:
+    """Report that this user is active on this server for our app. Returns True if the request succeeded."""
     token = _get_app_token()
     if not token:
         return False
     backend_url = getattr(settings, "BACKEND_URL", "").rstrip("/")
     url = f"{backend_url}/api/v1/app/activity/"
-    data = json.dumps({"user_id": user_id}).encode("utf-8")
+    data = json.dumps({"user_id": user_id, "server_id": server_id}).encode("utf-8")
     req = urllib.request.Request(
         url,
         data=data,
@@ -68,13 +69,13 @@ def report_activity(user_id: str) -> bool:
         return False
 
 
-def _fetch_online_users() -> list[dict]:
-    """Fetch online users from matchmaker. Returns list of { user_id, username }."""
+def _fetch_online_users(server_id: str) -> list[dict]:
+    """Fetch online users for this server from matchmaker. Returns list of { user_id, username }."""
     token = _get_app_token()
     if not token:
         return []
     backend_url = getattr(settings, "BACKEND_URL", "").rstrip("/")
-    url = f"{backend_url}/api/v1/app/online-users/"
+    url = f"{backend_url}/api/v1/app/online-users/?server_id={urllib.parse.quote(server_id, safe='')}"
     req = urllib.request.Request(
         url,
         method="GET",
@@ -87,10 +88,10 @@ def _fetch_online_users() -> list[dict]:
         return []
 
 
-def _poll_online_users_loop():
-    """Background loop: poll matchmaker every 5 seconds and update cached online users."""
+def _poll_online_users_loop(server_id: str):
+    """Background loop: poll matchmaker every 5 seconds and update cached online users for this server."""
     while True:
-        users = _fetch_online_users()
+        users = _fetch_online_users(server_id) if server_id else []
         with _online_users_lock:
             global _online_users
             _online_users = users
@@ -103,7 +104,9 @@ def get_cached_online_users() -> list[dict]:
         return list(_online_users)
 
 
-def start_online_users_poller():
-    """Start the background thread that polls the matchmaker for online users."""
-    t = threading.Thread(target=_poll_online_users_loop, daemon=True)
+def start_online_users_poller(server_id: str | None = None):
+    """Start the background thread that polls the matchmaker for online users on this server.
+    server_id should be set from MATCHMAKER_SERVER_ID (from register_with_matchmaker output)."""
+    sid = server_id or getattr(settings, "MATCHMAKER_SERVER_ID", "") or ""
+    t = threading.Thread(target=_poll_online_users_loop, args=(sid,), daemon=True)
     t.start()

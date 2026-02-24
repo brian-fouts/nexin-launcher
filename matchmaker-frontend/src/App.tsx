@@ -1,4 +1,5 @@
 import { Link, Route, Routes, useNavigate } from 'react-router-dom'
+import { useMatchmakerWebSocket } from './api/useMatchmakerWebSocket'
 import { useAuth } from './contexts/AuthContext'
 import AppDetail from './pages/AppDetail'
 import Apps from './pages/Apps'
@@ -14,6 +15,7 @@ import Signup from './pages/Signup'
 function App() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  useMatchmakerWebSocket()
 
   const handleLogout = () => {
     logout()

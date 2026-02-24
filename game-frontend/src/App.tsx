@@ -9,16 +9,16 @@ import Login from './pages/Login'
 function HeartbeatPoll() {
   const { user } = useAuth()
   useEffect(() => {
-    if (!user?.user_id) return
+    if (!user?.user_id || !user?.server_id) return
     const tick = () => {
-      gameApi.heartbeat(user.user_id).catch(() => {
+      gameApi.heartbeat(user.user_id, user.server_id).catch(() => {
         // ignore; will retry next interval
       })
     }
     tick()
     const id = setInterval(tick, 10_000)
     return () => clearInterval(id)
-  }, [user?.user_id])
+  }, [user?.user_id, user?.server_id])
   return null
 }
 

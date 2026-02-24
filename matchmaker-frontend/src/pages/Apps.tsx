@@ -1,9 +1,40 @@
+import { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { useApps, useGenerateOneTimeToken, useServers } from '../api/hooks'
+import { useApps, useGenerateOneTimeToken, useServerOnlineUsers, useServers } from '../api/hooks'
 
 function formatDate(s: string) {
   return new Date(s).toLocaleString()
+}
+
+function ServerOnlineUsers({ appId, serverId }: { appId: string; serverId: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const { data: users, isLoading } = useServerOnlineUsers(appId, serverId)
+  const count = users?.length ?? 0
+  return (
+    <div style={{ marginTop: '0.5rem' }}>
+      <button
+        type="button"
+        onClick={() => setExpanded((e) => !e)}
+        style={{ fontSize: '0.8125rem', padding: '0.35rem 0.6rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6 }}
+      >
+        {isLoading ? '…' : `${count} user${count !== 1 ? 's' : ''} online`} {expanded ? '▼' : '▶'}
+      </button>
+      {expanded && (
+        <ul style={{ listStyle: 'none', padding: 0, margin: '0.35rem 0 0', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+          {users?.length === 0 ? (
+            <li>No one online on this server.</li>
+          ) : (
+            users?.map((u) => (
+              <li key={u.user_id} style={{ padding: '0.15rem 0' }}>
+                {u.username || u.user_id}
+              </li>
+            ))
+          )}
+        </ul>
+      )}
+    </div>
+  )
 }
 
 function ServerListForApp({ appId }: { appId: string }) {
@@ -54,6 +85,7 @@ function ServerListForApp({ appId }: { appId: string }) {
               {s.port != null && ` · Port ${s.port}`}
               {' · '}{formatDate(s.created_at)}
             </p>
+            <ServerOnlineUsers appId={appId} serverId={s.server_id} />
             {s.game_modes && Object.keys(s.game_modes).length > 0 && (
               <ul style={{ margin: '0.25rem 0 0', paddingLeft: '1.25rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 {Object.entries(s.game_modes).map(([k, v]) => (
@@ -69,7 +101,8 @@ function ServerListForApp({ appId }: { appId: string }) {
                     generateOneTimeToken.mutate(appId, {
                       onSuccess: (data) => {
                         const base = s.game_frontend_url!.replace(/\/$/, '')
-                        window.open(`${base}/login?ticket=${encodeURIComponent(data.token)}`, '_blank', 'noopener,noreferrer')
+                        const params = new URLSearchParams({ ticket: data.token, server_id: s.server_id })
+                        window.open(`${base}/login?${params}`, '_blank', 'noopener,noreferrer')
                       },
                     })
                   }}

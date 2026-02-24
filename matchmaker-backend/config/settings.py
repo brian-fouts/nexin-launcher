@@ -27,6 +27,7 @@ ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,matchmaker-
 # api first so api.User is registered before anything that references AUTH_USER_MODEL (e.g. admin
 # can still be loaded by migration discovery; with api first, User exists when it’s resolved).
 INSTALLED_APPS = [
+    "daphne",
     "api",
     "django.contrib.contenttypes",
     "django.contrib.auth",
@@ -67,6 +68,21 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
+
+# Use Redis if REDIS_URL is set (required for multi-worker WebSocket broadcast). Else in-memory (single process only).
+_redis_url = os.environ.get("REDIS_URL", "").strip()
+if _redis_url:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [_redis_url]},
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
+    }
 
 DATABASES = {
     "default": {

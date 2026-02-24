@@ -3,11 +3,14 @@ import type { LoginResponse } from '../api/client'
 
 const STORAGE_KEY = 'gameUser'
 
-function loadStoredUser(): LoginResponse | null {
+/** Stored user may include server_id (set when joining via matchmaker with server_id in URL). */
+export type StoredUser = LoginResponse & { server_id?: string }
+
+function loadStoredUser(): StoredUser | null {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY)
     if (!raw) return null
-    const data = JSON.parse(raw) as LoginResponse
+    const data = JSON.parse(raw) as StoredUser
     if (data?.user_id) return data
   } catch {
     // ignore
@@ -16,14 +19,14 @@ function loadStoredUser(): LoginResponse | null {
 }
 
 type AuthContextValue = {
-  user: LoginResponse | null
-  setUser: (user: LoginResponse | null) => void
+  user: StoredUser | null
+  setUser: (user: StoredUser | null) => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUserState] = useState<LoginResponse | null>(loadStoredUser)
+  const [user, setUserState] = useState<StoredUser | null>(loadStoredUser)
 
   const setUser = useCallback((next: LoginResponse | null) => {
     setUserState(next)

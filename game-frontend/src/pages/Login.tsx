@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 export default function Login() {
   const [searchParams] = useSearchParams()
   const ticket = searchParams.get('ticket')
+  const serverId = searchParams.get('server_id') ?? undefined
   const { setUser } = useAuth()
 
   const [result, setResult] = useState<LoginResponse | null>(null)
@@ -35,11 +36,11 @@ export default function Login() {
     setErrorBody(null)
     setResult(null)
     gameApi
-      .login(ticket)
+      .login(ticket, serverId)
       .then((data) => {
         if (!cancelledRef.current) {
           setResult(data)
-          setUser(data)
+          setUser(serverId ? { ...data, server_id: serverId } : data)
           setLoading(false)
         }
       })
@@ -58,7 +59,7 @@ export default function Login() {
     return () => {
       cancelledRef.current = true
     }
-  }, [ticket])
+  }, [ticket, serverId])
 
   if (ticket == null || ticket === '') {
     return (

@@ -20,5 +20,6 @@ urlpatterns = [
     path("apps/<uuid:app_id>/one-time-token/", one_time_token_views.one_time_token_generate),
     path("apps/<uuid:app_id>/servers/", app_views.server_list),
     path("apps/<uuid:app_id>/servers/<uuid:server_id>/", app_views.server_detail),
+    path("apps/<uuid:app_id>/servers/<uuid:server_id>/online-users/", app_views.server_online_users),
     path("one-time-token/validate/", one_time_token_views.one_time_token_validate),
 ]

@@ -7,12 +7,43 @@ import {
   useDeleteApp,
   useGenerateOneTimeToken,
   useRegenerateAppSecret,
+  useServerOnlineUsers,
   useServers,
   useUpdateApp,
 } from '../api/hooks'
 
 function formatDate(s: string) {
   return new Date(s).toLocaleString()
+}
+
+function ServerOnlineUsers({ appId, serverId }: { appId: string; serverId: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const { data: users, isLoading } = useServerOnlineUsers(appId, serverId)
+  const count = users?.length ?? 0
+  return (
+    <div style={{ marginTop: '0.5rem' }}>
+      <button
+        type="button"
+        onClick={() => setExpanded((e) => !e)}
+        style={{ fontSize: '0.8125rem', padding: '0.35rem 0.6rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6 }}
+      >
+        {isLoading ? '…' : `${count} user${count !== 1 ? 's' : ''} online`} {expanded ? '▼' : '▶'}
+      </button>
+      {expanded && (
+        <ul style={{ listStyle: 'none', padding: 0, margin: '0.35rem 0 0', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+          {users?.length === 0 ? (
+            <li>No one online on this server.</li>
+          ) : (
+            users?.map((u) => (
+              <li key={u.user_id} style={{ padding: '0.15rem 0' }}>
+                {u.username || u.user_id}
+              </li>
+            ))
+          )}
+        </ul>
+      )}
+    </div>
+  )
 }
 
 export default function AppDetail() {
@@ -291,6 +322,9 @@ export default function AppDetail() {
                     ))}
                   </ul>
                 )}
+                {appId && (
+                  <ServerOnlineUsers appId={appId} serverId={s.server_id} />
+                )}
                 {s.game_frontend_url && (
                   <p style={{ margin: '0.5rem 0 0' }}>
                     <button
@@ -300,7 +334,8 @@ export default function AppDetail() {
                         generateOneTimeToken.mutate(appId, {
                           onSuccess: (data) => {
                             const base = s.game_frontend_url!.replace(/\/$/, '')
-                            window.open(`${base}/login?ticket=${encodeURIComponent(data.token)}`, '_blank', 'noopener,noreferrer')
+                            const params = new URLSearchParams({ ticket: data.token, server_id: s.server_id })
+                            window.open(`${base}/login?${params}`, '_blank', 'noopener,noreferrer')
                           },
                         })
                       }}

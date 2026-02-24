@@ -6,6 +6,7 @@ from rest_framework.response import Response
 
 from .activity_store import get_online_user_ids, record_activity
 from .models import App, User, generate_app_secret
+from .ws_notify import notify_apps_changed, notify_online_users_changed, notify_servers_changed
 from .permissions import IsAppAuthenticated
 from .server_store import (
     add_server as store_add_server,
@@ -45,6 +46,7 @@ def app_list(request):
         app = serializer.save()
         data = AppListSerializer(app).data
         data["app_secret"] = getattr(app, "_plaintext_secret", None)
+        notify_apps_changed()
         return Response(data, status=status.HTTP_201_CREATED)
 
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
@@ -71,10 +73,12 @@ def app_detail(request, app_id):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.save()
+        notify_apps_changed()
         return Response(AppListSerializer(app).data)
 
     if request.method == "DELETE":
         app.delete()
+        notify_apps_changed()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
@@ -127,6 +131,7 @@ def app_server_create(request):
         port=data.get("port"),
         game_frontend_url=data.get("game_frontend_url") or None,
     )
+    notify_servers_changed(str(app.app_id))
     return Response(entry, status=status.HTTP_201_CREATED)
 
 
@@ -134,43 +139,80 @@ def app_server_create(request):
 @permission_classes([IsAppAuthenticated])
 def app_activity(request):
     """
-    Record that a user is active for the authenticated app (e.g. game-backend reports after login).
-    Body: { "user_id": "<uuid>" }. A user is "online" if they have activity within 15 seconds.
+    Record that a user is active on a server for the authenticated app.
+    Body: { "user_id": "<uuid>", "server_id": "<uuid>" }. A user is "online" on that server if activity within 15s.
     """
-    user_id_str = request.data.get("user_id") if request.data else None
+    data = request.data or {}
+    user_id_str = data.get("user_id")
+    server_id_str = data.get("server_id")
     if not user_id_str:
         return Response({"detail": "user_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+    if not server_id_str:
+        return Response({"detail": "server_id is required."}, status=status.HTTP_400_BAD_REQUEST)
     try:
         user_id = uuid.UUID(user_id_str)
+        server_id = uuid.UUID(server_id_str)
     except (TypeError, ValueError):
-        return Response({"detail": "user_id must be a valid UUID."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": "user_id and server_id must be valid UUIDs."}, status=status.HTTP_400_BAD_REQUEST)
     app = getattr(request, "app", None)
     if not app:
         return Response({"detail": "App authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
     if not User.objects.filter(user_id=user_id).exists():
         return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
-    record_activity(app.app_id, user_id)
+    record_activity(app.app_id, server_id, user_id)
+    notify_online_users_changed(str(app.app_id), str(server_id))
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def _online_users_for_server(app_id: uuid.UUID, server_id: uuid.UUID) -> list[dict]:
+    """Return [ { "user_id": str, "username": str }, ... ] for this app+server (activity within 15 seconds)."""
+    user_ids = get_online_user_ids(app_id, server_id)
+    users = User.objects.filter(user_id__in=user_ids).values("user_id", "username")
+    user_map = {str(u["user_id"]): u["username"] for u in users}
+    return [
+        {"user_id": str(uid), "username": user_map.get(str(uid), "")}
+        for uid in user_ids
+    ]
 
 
 @api_view(["GET"])
 @permission_classes([IsAppAuthenticated])
 def app_online_users(request):
     """
-    Return users considered "online" for the authenticated app (activity within 15 seconds).
-    Response: [ { "user_id": "<uuid>", "username": "..." }, ... ]
+    Return users considered "online" for the authenticated app on a given server.
+    Query: server_id=<uuid> (required). Response: [ { "user_id": "<uuid>", "username": "..." }, ... ]
     """
     app = getattr(request, "app", None)
     if not app:
         return Response({"detail": "App authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
-    user_ids = get_online_user_ids(app.app_id)
-    users = User.objects.filter(user_id__in=user_ids).values("user_id", "username")
-    user_map = {str(u["user_id"]): u["username"] for u in users}
-    result = [
-        {"user_id": str(uid), "username": user_map.get(str(uid), "")}
-        for uid in user_ids
-    ]
-    return Response(result)
+    server_id_str = request.query_params.get("server_id")
+    if not server_id_str:
+        return Response({"detail": "server_id query parameter is required."}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        server_id = uuid.UUID(server_id_str)
+    except (TypeError, ValueError):
+        return Response({"detail": "server_id must be a valid UUID."}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(_online_users_for_server(app.app_id, server_id))
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def server_online_users(request, app_id, server_id):
+    """
+    Return users considered "online" on this server (activity within 15 seconds).
+    User JWT; any authenticated user can read. Used by matchmaker frontend.
+    Response: [ { "user_id": "<uuid>", "username": "..." }, ... ]
+    """
+    try:
+        App.objects.get(app_id=app_id)
+    except App.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    app_uuid = app_id if isinstance(app_id, uuid.UUID) else uuid.UUID(app_id)
+    server_uuid = server_id if isinstance(server_id, uuid.UUID) else uuid.UUID(server_id)
+    server = store_get_server(app_uuid, server_uuid)
+    if not server:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    return Response(_online_users_for_server(app_uuid, server_uuid))
 
 
 @api_view(["GET", "POST"])
@@ -207,6 +249,7 @@ def server_list(request, app_id):
             port=data.get("port"),
             game_frontend_url=data.get("game_frontend_url") or None,
         )
+        notify_servers_changed(str(app.app_id))
         return Response(entry, status=status.HTTP_201_CREATED)
 
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
@@ -241,10 +284,12 @@ def server_detail(request, app_id, server_id):
             if key in request.data:
                 update_data[key] = request.data[key]
         updated = store_update_server(app_id, server_id, update_data)
+        notify_servers_changed(str(app_id))
         return Response(updated)
 
     if request.method == "DELETE":
         store_delete_server(app_id, server_id)
+        notify_servers_changed(str(app_id))
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)

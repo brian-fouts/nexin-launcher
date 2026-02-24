@@ -156,6 +156,15 @@ export function useGenerateOneTimeToken() {
   })
 }
 
+export function useServerOnlineUsers(appId: string | null, serverId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.apps.serverOnlineUsers(appId, serverId),
+    queryFn: () => api.apps.servers.onlineUsers(appId!, serverId!),
+    enabled: !!appId && !!serverId,
+    refetchInterval: 10_000,
+  })
+}
+
 export function useValidateOneTimeToken() {
   return useMutation({
     mutationFn: (token: string) => api.oneTimeToken.validate(token),

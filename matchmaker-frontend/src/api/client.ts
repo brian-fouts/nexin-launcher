@@ -171,6 +171,11 @@ export interface ServerUpdate {
   game_frontend_url?: string | null
 }
 
+export interface OnlineUser {
+  user_id: string
+  username: string
+}
+
 // --- Endpoints ---
 
 export const api = {
@@ -283,6 +288,9 @@ export const api = {
       },
       delete(appId: string, serverId: string): Promise<void> {
         return request<void>(`${API_V1}/apps/${appId}/servers/${serverId}/`, { method: 'DELETE' })
+      },
+      onlineUsers(appId: string, serverId: string): Promise<OnlineUser[]> {
+        return request<OnlineUser[]>(`${API_V1}/apps/${appId}/servers/${serverId}/online-users/`)
       },
     },
   },

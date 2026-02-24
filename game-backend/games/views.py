@@ -28,17 +28,23 @@ def online_users(request):
 @api_view(["POST"])
 def heartbeat(request):
     """
-    Record that the given user is still online. Called by the game-frontend every ~10 seconds
-    while the user is on the game page. Forwards to matchmaker so the user stays in the 15s window.
-    POST body: {"user_id": "<uuid>"}. Returns 204 on success.
+    Record that the given user is still online on this server. Called by the game-frontend every ~10s.
+    POST body: {"user_id": "<uuid>", "server_id": "<uuid>"}. Returns 204 on success.
     """
-    user_id = request.data.get("user_id") if request.data else None
+    data = request.data or {}
+    user_id = data.get("user_id")
+    server_id = data.get("server_id")
     if not user_id:
         return Response(
             {"detail": "Missing user_id."},
             status=status.HTTP_400_BAD_REQUEST,
         )
-    report_activity(user_id)
+    if not server_id:
+        return Response(
+            {"detail": "Missing server_id."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    report_activity(user_id, server_id)
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -49,7 +55,9 @@ def login(request):
     POST body: {"ticket": "<token>"}. On success returns user_id, username, app_id; on failure returns 401.
     Reports the user as active to the matchmaker so they appear "online".
     """
-    ticket = request.data.get("ticket") if request.data else None
+    data_in = request.data or {}
+    ticket = data_in.get("ticket")
+    server_id = data_in.get("server_id")
     if not ticket:
         return Response(
             {"detail": "Missing ticket."},
@@ -70,8 +78,8 @@ def login(request):
             body = resp.read().decode("utf-8")
             result = json.loads(body)
             user_id = result.get("user_id")
-            if user_id:
-                report_activity(user_id)
+            if user_id and server_id:
+                report_activity(user_id, server_id)
             return Response(result, status=resp.status)
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8")
