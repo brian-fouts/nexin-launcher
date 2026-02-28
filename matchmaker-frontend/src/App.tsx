@@ -7,7 +7,6 @@ import CreateApp from './pages/CreateApp'
 import Health from './pages/Health'
 import ValidateToken from './pages/ValidateToken'
 import Home from './pages/Home'
-import Items from './pages/Items'
 import LFGGroups from './pages/LFGGroups'
 import LFGDetail from './pages/LFGDetail'
 import CreateLFG from './pages/CreateLFG'
@@ -44,9 +43,6 @@ function App() {
         <Link to="/health" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
           API Health
         </Link>
-        <Link to="/items" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
-          Items
-        </Link>
         <Link to="/lfg" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
           LFG
         </Link>
@@ -82,7 +78,6 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/health" element={<Health />} />
-          <Route path="/items" element={<Items />} />
           <Route path="/apps" element={<Apps />} />
           <Route path="/apps/new" element={<CreateApp />} />
           <Route path="/apps/validate-token" element={<ValidateToken />} />

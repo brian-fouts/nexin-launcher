@@ -98,21 +98,6 @@ class User(AbstractBaseUser):
         return self.username
 
 
-class Item(models.Model):
-    """Example resource for API demonstration."""
-
-    name = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-
-    def __str__(self):
-        return self.name
-
-
 def generate_app_secret():
     """Return a new random app secret (plaintext). Hash before storing."""
     return secrets.token_urlsafe(32)

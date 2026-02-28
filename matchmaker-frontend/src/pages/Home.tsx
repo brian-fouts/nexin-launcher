@@ -8,7 +8,7 @@ export default function Home() {
     <div className="card" style={{ marginTop: '1rem' }}>
       <h1 style={{ marginTop: 0 }}>Nexin Launcher</h1>
       <p style={{ color: 'var(--text-muted)' }}>
-        React frontend instrumented with the Django API. Use the nav to inspect health and manage items.
+        React frontend for the matchmaker API. Use the nav to check health, browse LFG, and manage apps.
       </p>
       <p>
         Backend status:{' '}
@@ -20,7 +20,7 @@ export default function Home() {
       </p>
       <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
         <Link to="/health" style={{ color: 'var(--accent)' }}>View API Health →</Link>
-        <Link to="/items" style={{ color: 'var(--accent)' }}>Manage Items →</Link>
+        <Link to="/lfg" style={{ color: 'var(--accent)' }}>LFG groups →</Link>
       </div>
     </div>
   )

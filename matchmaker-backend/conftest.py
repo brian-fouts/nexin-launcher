@@ -10,11 +10,6 @@ def api_client():
 
 
 @pytest.fixture
-def item_payload():
-    return {"name": "Test Item", "description": "A test description"}
-
-
-@pytest.fixture
 def authenticated_client(api_client):
     """Create a user and return (user, client) with client authenticated via JWT (so auth classes see a valid Bearer token)."""
 

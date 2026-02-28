@@ -1,14 +1,7 @@
 from rest_framework import serializers
 
-from .models import App, Item, Server, User
+from .models import App, Server, User
 from .models import generate_app_secret
-
-
-class ItemSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Item
-        fields = ["id", "name", "description", "created_at", "updated_at"]
-        read_only_fields = ["id", "created_at", "updated_at"]
 
 
 # --- Auth ---

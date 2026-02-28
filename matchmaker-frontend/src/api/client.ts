@@ -55,24 +55,6 @@ export interface HealthResponse {
   service: string
 }
 
-export interface Item {
-  id: number
-  name: string
-  description: string
-  created_at: string
-  updated_at: string
-}
-
-export interface ItemCreate {
-  name: string
-  description?: string
-}
-
-export interface ItemUpdate {
-  name?: string
-  description?: string
-}
-
 // --- Auth types ---
 
 export interface User {
@@ -259,30 +241,6 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(payload),
       })
-    },
-  },
-
-  items: {
-    list(): Promise<Item[]> {
-      return request<Item[]>(`${API_V1}/items/`)
-    },
-    get(id: number): Promise<Item> {
-      return request<Item>(`${API_V1}/items/${id}/`)
-    },
-    create(data: ItemCreate): Promise<Item> {
-      return request<Item>(`${API_V1}/items/`, {
-        method: 'POST',
-        body: JSON.stringify(data),
-      })
-    },
-    update(id: number, data: ItemUpdate): Promise<Item> {
-      return request<Item>(`${API_V1}/items/${id}/`, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      })
-    },
-    delete(id: number): Promise<void> {
-      return request<void>(`${API_V1}/items/${id}/`, { method: 'DELETE' })
     },
   },
 

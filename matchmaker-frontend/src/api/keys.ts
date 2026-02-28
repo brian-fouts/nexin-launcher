@@ -4,11 +4,6 @@
  */
 export const queryKeys = {
   health: () => ['api', 'health'] as const,
-  items: {
-    all: ['api', 'items'] as const,
-    list: () => [...queryKeys.items.all, 'list'] as const,
-    detail: (id: number | null) => [...queryKeys.items.all, 'detail', id] as const,
-  },
   apps: {
     all: ['api', 'apps'] as const,
     list: () => [...queryKeys.apps.all, 'list'] as const,

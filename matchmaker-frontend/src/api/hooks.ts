@@ -8,8 +8,6 @@ import {
   api,
   type AppCreate,
   type AppUpdate,
-  type ItemCreate,
-  type ItemUpdate,
   type LFGGroupCreate,
   type LoginPayload,
   type RegisterPayload,
@@ -23,53 +21,6 @@ export function useHealth() {
     queryKey: queryKeys.health(),
     queryFn: () => api.health(),
     refetchInterval: 30_000,
-  })
-}
-
-export function useItems() {
-  return useQuery({
-    queryKey: queryKeys.items.list(),
-    queryFn: () => api.items.list(),
-  })
-}
-
-export function useItem(id: number | null) {
-  return useQuery({
-    queryKey: queryKeys.items.detail(id),
-    queryFn: () => api.items.get(id!),
-    enabled: id != null,
-  })
-}
-
-export function useCreateItem() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (data: ItemCreate) => api.items.create(data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.items.all })
-    },
-  })
-}
-
-export function useUpdateItem() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: ItemUpdate }) =>
-      api.items.update(id, data),
-    onSuccess: (_, { id }) => {
-      qc.invalidateQueries({ queryKey: queryKeys.items.detail(id) })
-      qc.invalidateQueries({ queryKey: queryKeys.items.all })
-    },
-  })
-}
-
-export function useDeleteItem() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (id: number) => api.items.delete(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.items.all })
-    },
   })
 }
 
