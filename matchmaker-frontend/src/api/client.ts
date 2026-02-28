@@ -176,6 +176,32 @@ export interface OnlineUser {
   username: string
 }
 
+// --- Discord LFG types ---
+
+export interface LFGMember {
+  discord_id: string
+  joined_at: string
+}
+
+export interface LFGGroup {
+  id: string
+  created_at: string
+  created_by: string
+  start_time: string
+  duration: number
+  max_party_size: number | null
+  description: string
+  members: LFGMember[]
+}
+
+export interface LFGGroupCreate {
+  created_by: string
+  start_time: string
+  duration: number
+  max_party_size?: number | null
+  description?: string
+}
+
 // --- Endpoints ---
 
 export const api = {
@@ -300,6 +326,29 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ token }),
       })
+    },
+  },
+
+  discord: {
+    lfg: {
+      listGroups(): Promise<LFGGroup[]> {
+        return request<LFGGroup[]>(`${API_V1}/discord/lfg/groups/`)
+      },
+      get(lfgId: string): Promise<LFGGroup> {
+        return request<LFGGroup>(`${API_V1}/discord/lfg/${lfgId}/`)
+      },
+      create(data: LFGGroupCreate): Promise<LFGGroup> {
+        return request<LFGGroup>(`${API_V1}/discord/lfg/`, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        })
+      },
+      join(lfgId: string, discordId: string): Promise<LFGMember> {
+        return request<LFGMember>(`${API_V1}/discord/lfg/${lfgId}/join/`, {
+          method: 'POST',
+          body: JSON.stringify({ discord_id: discordId }),
+        })
+      },
     },
   },
 }

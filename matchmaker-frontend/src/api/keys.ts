@@ -17,4 +17,9 @@ export const queryKeys = {
     serverOnlineUsers: (appId: string | null, serverId: string | null) =>
       [...queryKeys.apps.all, 'servers', appId, 'onlineUsers', serverId] as const,
   },
+  lfg: {
+    all: ['api', 'discord', 'lfg'] as const,
+    list: () => [...queryKeys.lfg.all, 'list'] as const,
+    detail: (id: string | null) => [...queryKeys.lfg.all, 'detail', id] as const,
+  },
 }

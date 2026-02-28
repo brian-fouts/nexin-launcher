@@ -10,6 +10,7 @@ import {
   type AppUpdate,
   type ItemCreate,
   type ItemUpdate,
+  type LFGGroupCreate,
   type LoginPayload,
   type RegisterPayload,
   type ServerCreate,
@@ -219,6 +220,44 @@ export function useDeleteServer(appId: string | null) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.apps.servers(appId) })
       qc.invalidateQueries({ queryKey: queryKeys.apps.all })
+    },
+  })
+}
+
+// --- Discord LFG hooks ---
+
+export function useLfgGroups() {
+  return useQuery({
+    queryKey: queryKeys.lfg.list(),
+    queryFn: () => api.discord.lfg.listGroups(),
+  })
+}
+
+export function useLfgGroup(lfgId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.lfg.detail(lfgId),
+    queryFn: () => api.discord.lfg.get(lfgId!),
+    enabled: !!lfgId,
+  })
+}
+
+export function useCreateLfgGroup() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: LFGGroupCreate) => api.discord.lfg.create(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.lfg.all })
+    },
+  })
+}
+
+export function useLfgJoin(lfgId: string | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (discordId: string) => api.discord.lfg.join(lfgId!, discordId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.lfg.detail(lfgId) })
+      qc.invalidateQueries({ queryKey: queryKeys.lfg.list() })
     },
   })
 }

@@ -8,6 +8,9 @@ import Health from './pages/Health'
 import ValidateToken from './pages/ValidateToken'
 import Home from './pages/Home'
 import Items from './pages/Items'
+import LFGGroups from './pages/LFGGroups'
+import LFGDetail from './pages/LFGDetail'
+import CreateLFG from './pages/CreateLFG'
 import Login from './pages/Login'
 import MyAccount from './pages/MyAccount'
 import Signup from './pages/Signup'
@@ -41,6 +44,9 @@ function App() {
         </Link>
         <Link to="/items" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
           Items
+        </Link>
+        <Link to="/lfg" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
+          LFG
         </Link>
         {user && (
           <Link to="/apps" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
@@ -79,6 +85,9 @@ function App() {
           <Route path="/apps/new" element={<CreateApp />} />
           <Route path="/apps/validate-token" element={<ValidateToken />} />
           <Route path="/apps/:appId" element={<AppDetail />} />
+          <Route path="/lfg" element={<LFGGroups />} />
+          <Route path="/lfg/new" element={<CreateLFG />} />
+          <Route path="/lfg/:lfgId" element={<LFGDetail />} />
           <Route path="/account" element={<MyAccount />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />

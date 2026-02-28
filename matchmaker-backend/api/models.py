@@ -147,6 +147,53 @@ class Server(models.Model):
         return self.server_name
 
 
+class LFGGroup(models.Model):
+    """Looking-for-group session created via Discord. Created by Discord user id."""
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        db_column="id",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.CharField(max_length=32, db_index=True)  # Discord user id (snowflake)
+    start_time = models.DateTimeField()
+    duration = models.FloatField()
+    max_party_size = models.PositiveIntegerField(null=True, blank=True)
+    description = models.CharField(max_length=2048, blank=True)
+
+    class Meta:
+        db_table = "api_lfg_group"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"LFG {self.id} by {self.created_by}"
+
+
+class LFGMember(models.Model):
+    """User (by Discord id) joined to an LFG group. One membership per (lfg, discord_id)."""
+
+    lfg = models.ForeignKey(
+        LFGGroup,
+        on_delete=models.CASCADE,
+        related_name="members",
+        db_column="lfg_id",
+    )
+    discord_id = models.CharField(max_length=32, db_index=True)
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "api_lfg_member"
+        ordering = ["joined_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["lfg", "discord_id"], name="api_lfg_member_unique_lfg_discord"),
+        ]
+
+    def __str__(self):
+        return f"{self.discord_id} in LFG {self.lfg_id}"
+
+
 class OneTimeToken(models.Model):
     """Stored jti for one-time JWTs. One valid per (user, app); deleted when token is used."""
 

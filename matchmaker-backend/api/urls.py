@@ -1,9 +1,10 @@
-from django.urls import path
+from django.urls import include, path
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from . import app_auth_views, app_views, auth_views, one_time_token_views, views
 
 urlpatterns = [
+    path("discord/", include("api.discord.urls")),
     path("health/", views.health),
     path("auth/register/", auth_views.register),
     path("auth/login/", auth_views.login),
