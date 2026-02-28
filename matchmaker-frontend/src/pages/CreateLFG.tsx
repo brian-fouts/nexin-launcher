@@ -1,26 +1,30 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { useCreateLfgGroup } from '../api/hooks'
 
 export default function CreateLFG() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const createGroup = useCreateLfgGroup()
-  const [createdBy, setCreatedBy] = useState('')
   const [startTime, setStartTime] = useState('')
   const [duration, setDuration] = useState('1')
   const [maxPartySize, setMaxPartySize] = useState('')
   const [description, setDescription] = useState('')
 
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!createdBy.trim() || !startTime || !duration) return
+    if (!startTime || !duration) return
     const durationNum = parseFloat(duration)
     if (Number.isNaN(durationNum) || durationNum <= 0) return
     const max = maxPartySize.trim() ? parseInt(maxPartySize, 10) : undefined
     if (maxPartySize.trim() && (Number.isNaN(max) || max < 1)) return
     createGroup.mutate(
       {
-        created_by: createdBy.trim(),
         start_time: startTime,
         duration: durationNum,
         max_party_size: max ?? null,
@@ -35,7 +39,6 @@ export default function CreateLFG() {
   const durationNum = parseFloat(duration)
   const maxNum = maxPartySize.trim() ? parseInt(maxPartySize, 10) : null
   const isValid =
-    createdBy.trim() &&
     startTime &&
     !Number.isNaN(durationNum) &&
     durationNum > 0 &&
@@ -45,18 +48,14 @@ export default function CreateLFG() {
     <div className="card" style={{ marginTop: '1rem', maxWidth: 520 }}>
       <h2 style={{ marginTop: 0 }}>Create LFG group</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1rem' }}>
-        You'll be added as the first member. Start time and duration are in your local timezone.
+        You'll be added as the first member (using your linked Discord account). Start time and duration are in your local timezone.
       </p>
+      {!user.discord_id && (
+        <p style={{ color: 'var(--error)', fontSize: '0.875rem', marginBottom: '1rem' }}>
+          Link your Discord account in <Link to="/account">My Account</Link> to create an LFG group.
+        </p>
+      )}
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <div>
-          <label htmlFor="lfg-created-by">Your Discord ID</label>
-          <input
-            id="lfg-created-by"
-            value={createdBy}
-            onChange={(e) => setCreatedBy(e.target.value)}
-            placeholder="e.g. 123456789012345678"
-          />
-        </div>
         <div>
           <label htmlFor="lfg-start-time">Start time</label>
           <input
@@ -99,7 +98,7 @@ export default function CreateLFG() {
             rows={3}
           />
         </div>
-        <button type="submit" disabled={createGroup.isPending || !isValid}>
+        <button type="submit" disabled={createGroup.isPending || !isValid || !user.discord_id}>
           {createGroup.isPending ? 'Creating…' : 'Create group'}
         </button>
         {createGroup.isError && (

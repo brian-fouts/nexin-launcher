@@ -6,6 +6,8 @@ export interface StoredUser {
   user_id: string
   email: string
   username: string
+  discord_id?: string | null
+  discord_username?: string | null
   created_at: string
   updated_at: string
   last_login_at: string | null

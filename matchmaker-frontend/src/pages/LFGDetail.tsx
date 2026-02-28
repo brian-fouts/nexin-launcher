@@ -54,7 +54,7 @@ export default function LFGDetail() {
               {group.id}
             </p>
             <p style={{ margin: '0.5rem 0 0', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-              Created by Discord {group.created_by} · {formatDate(group.created_at)}
+              Created {formatDate(group.created_at)}
             </p>
             <p style={{ margin: '0.5rem 0 0' }}>
               <strong>Starts:</strong> {formatDate(group.start_time)} · <strong>Duration:</strong>{' '}
@@ -95,7 +95,7 @@ export default function LFGDetail() {
                   gap: '0.5rem',
                 }}
               >
-                <span style={{ fontFamily: 'monospace' }}>{m.discord_id}</span>
+                <span>{m.username ?? m.discord_id}</span>
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
                   RSVP'd {formatDate(m.joined_at)}
                 </span>

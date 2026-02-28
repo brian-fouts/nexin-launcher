@@ -24,12 +24,47 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("is_superuser", True)
         return self.create_user(email, username, password, **extra_fields)
 
+    def get_or_create_from_discord(self, discord_id, username, email=None, discord_username=None):
+        """
+        Get existing user by discord_id or create one (Discord OAuth2).
+        email is optional; if missing we use a placeholder. username is our site username.
+        discord_username is the Discord display name (stored for display/linking).
+        """
+        user = self.filter(discord_id=discord_id).first()
+        if user:
+            if discord_username is not None and user.discord_username != discord_username:
+                user.discord_username = (discord_username or "")[:150]
+                user.save(update_fields=["discord_username", "updated_at"])
+            return user, False
+        # Ensure unique username (Discord usernames are not globally unique)
+        base_username = (username or "discord_user")[: 150 - 10]
+        base_username = "".join(c for c in base_username if c.isalnum() or c in "._- ") or "user"
+        unique_username = base_username
+        n = 0
+        while self.filter(username=unique_username).exists():
+            n += 1
+            suffix = str(n)
+            unique_username = (base_username[: 150 - len(suffix) - 1] + "_" + suffix).strip()
+        email = email or f"discord-{discord_id}@users.discord.placeholder"
+        if self.filter(email=email).exists():
+            email = f"discord-{discord_id}-{uuid.uuid4().hex[:8]}@users.discord.placeholder"
+        user = self.model(
+            email=self.normalize_email(email),
+            username=unique_username,
+            discord_id=discord_id,
+            discord_username=(discord_username or "")[:150] if discord_username else None,
+        )
+        user.set_unusable_password()
+        user.save(using=self._db)
+        return user, True
+
 
 class User(AbstractBaseUser):
     """
     Custom user with UUID primary key, unique email/username, and
     created_at / updated_at / last_login_at timestamps.
     Passwords are stored hashed and salted (Django default: PBKDF2).
+    Can be linked to Discord via discord_id (OAuth2).
     """
 
     user_id = models.UUIDField(
@@ -40,6 +75,8 @@ class User(AbstractBaseUser):
     )
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=150, unique=True)
+    discord_id = models.CharField(max_length=32, unique=True, null=True, blank=True, db_index=True)
+    discord_username = models.CharField(max_length=150, null=True, blank=True)
     # password from AbstractBaseUser (salted/hashed via set_password)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

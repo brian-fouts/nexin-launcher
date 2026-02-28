@@ -134,6 +134,23 @@ CORS_ALLOWED_ORIGINS = os.environ.get(
     "http://localhost:5173,http://127.0.0.1:5173,http://matchmaker-frontend:5173",
 ).split(",")
 
+# Discord OAuth2 (matchmaker account registration / login)
+# Discord redirects to the frontend URL; frontend sends code to backend to exchange for tokens.
+DISCORD_CLIENT_ID = os.environ.get("DISCORD_CLIENT_ID", "")
+DISCORD_CLIENT_SECRET = os.environ.get("DISCORD_CLIENT_SECRET", "")
+DISCORD_FRONTEND_REDIRECT = os.environ.get(
+    "DISCORD_FRONTEND_REDIRECT",
+    "http://localhost:5173/discord-callback",
+)
+DISCORD_FRONTEND_REDIRECT_LINK = os.environ.get(
+    "DISCORD_FRONTEND_REDIRECT_LINK",
+    "http://localhost:5173/discord-link-callback",
+)
+DISCORD_AUTHORIZE_URL = "https://discord.com/oauth2/authorize"
+DISCORD_TOKEN_URL = "https://discord.com/api/oauth2/token"
+DISCORD_USER_URL = "https://discord.com/api/users/@me"
+DISCORD_OAUTH_SCOPES = "identify email"
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

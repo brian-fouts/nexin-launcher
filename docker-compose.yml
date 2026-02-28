@@ -6,14 +6,12 @@ services:
 
   db:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: nexin
-      POSTGRES_USER: nexin
-      POSTGRES_PASSWORD: nexin
+    env_file:
+      - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nexin"]
+      test: ["CMD-SHELL", "pg_isready -U \"${POSTGRES_USER:-nexin}\""]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -22,10 +20,9 @@ services:
     build:
       context: ./matchmaker-backend
       dockerfile: Dockerfile
+    env_file:
+      - .env
     environment:
-      POSTGRES_DB: nexin
-      POSTGRES_USER: nexin
-      POSTGRES_PASSWORD: nexin
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
       REDIS_URL: redis://redis:6379
@@ -51,14 +48,11 @@ services:
     build:
       context: ./game-backend
       dockerfile: Dockerfile
+    env_file:
+      - .env
     environment:
-      POSTGRES_DB: nexin
-      POSTGRES_USER: nexin
-      POSTGRES_PASSWORD: nexin
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
-      MATCHMAKING_APP_ID: d7809d24-8742-485a-b7c9-daac07f21858
-      MATCHMAKING_SECRET: 73-uVWzErkplHYdnYWoebwLrNA46V87DIBCe5BHpeMQ
       BACKEND_URL: http://matchmaker-backend:8000
       SERVER_NAME: "Nexin Game Server"
       SERVER_DESCRIPTION: "Default game server for matchmaking"
@@ -82,8 +76,12 @@ services:
     build:
       context: ./matchmaker-frontend
       dockerfile: Dockerfile
+    env_file:
+      - .env
     environment:
       BACKEND_URL: http://matchmaker-backend:8000
+      VITE_DISCORD_AUTHORIZE_URL: http://localhost:8000
+      VITE_DISCORD_FRONTEND_REDIRECT: http://localhost:5173/discord-callback
     depends_on:
       - matchmaker-backend
     ports:

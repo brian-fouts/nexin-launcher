@@ -79,6 +79,8 @@ export interface User {
   user_id: string
   email: string
   username: string
+  discord_id: string | null
+  discord_username: string | null
   created_at: string
   updated_at: string
   last_login_at: string | null
@@ -180,6 +182,8 @@ export interface OnlineUser {
 
 export interface LFGMember {
   discord_id: string
+  /** Username when the Discord account is linked to a matchmaker account; otherwise null */
+  username: string | null
   joined_at: string
 }
 
@@ -187,6 +191,8 @@ export interface LFGGroup {
   id: string
   created_at: string
   created_by: string
+  /** Username when the creator's Discord is linked to a matchmaker account */
+  created_by_username: string | null
   start_time: string
   duration: number
   max_party_size: number | null
@@ -195,7 +201,8 @@ export interface LFGGroup {
 }
 
 export interface LFGGroupCreate {
-  created_by: string
+  /** Omit when authenticated; backend uses request.user.discord_id */
+  created_by?: string
   start_time: string
   duration: number
   max_party_size?: number | null
@@ -220,6 +227,24 @@ export const api = {
       return request<AuthResponse>(`${API_V1}/auth/login/`, {
         method: 'POST',
         body: JSON.stringify(payload),
+      })
+    },
+    /** Current user from JWT (e.g. after Discord callback). */
+    me(): Promise<{ user: User }> {
+      return request<{ user: User }>(`${API_V1}/auth/me/`)
+    },
+    /** Exchange Discord OAuth code + state for user and tokens (DISCORD_FRONTEND_REDIRECT flow). */
+    discordExchange(code: string, state: string): Promise<AuthResponse> {
+      return request<AuthResponse>(`${API_V1}/auth/discord/exchange/`, {
+        method: 'POST',
+        body: JSON.stringify({ code, state }),
+      })
+    },
+    /** Link Discord to current account (requires user JWT). Use after redirect from link authorize. */
+    discordLinkExchange(code: string, state: string): Promise<AuthResponse> {
+      return request<AuthResponse>(`${API_V1}/auth/discord/link/exchange/`, {
+        method: 'POST',
+        body: JSON.stringify({ code, state }),
       })
     },
     refresh(refreshToken: string): Promise<AuthTokens> {

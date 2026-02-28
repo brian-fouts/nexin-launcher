@@ -11,6 +11,8 @@ import Items from './pages/Items'
 import LFGGroups from './pages/LFGGroups'
 import LFGDetail from './pages/LFGDetail'
 import CreateLFG from './pages/CreateLFG'
+import DiscordCallback from './pages/DiscordCallback'
+import DiscordLinkCallback from './pages/DiscordLinkCallback'
 import Login from './pages/Login'
 import MyAccount from './pages/MyAccount'
 import Signup from './pages/Signup'
@@ -89,6 +91,8 @@ function App() {
           <Route path="/lfg/new" element={<CreateLFG />} />
           <Route path="/lfg/:lfgId" element={<LFGDetail />} />
           <Route path="/account" element={<MyAccount />} />
+          <Route path="/discord-callback" element={<DiscordCallback />} />
+          <Route path="/discord-link-callback" element={<DiscordLinkCallback />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
         </Routes>

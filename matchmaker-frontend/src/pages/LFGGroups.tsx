@@ -88,7 +88,7 @@ export default function LFGGroups() {
                     {group.max_party_size != null && ` · max ${group.max_party_size}`}
                   </p>
                   <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    by Discord {group.created_by} · {group.members?.length ?? 0} member
+                    by {group.created_by_username ?? group.created_by} · {group.members?.length ?? 0} member
                     {(group.members?.length ?? 0) !== 1 ? 's' : ''}
                   </p>
                 </div>

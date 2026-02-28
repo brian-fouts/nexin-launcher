@@ -1,7 +1,7 @@
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -67,3 +67,10 @@ def login(request):
         "user": UserSerializer(user).data,
         "tokens": tokens_for_user(user),
     })
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def me(request):
+    """Return the current authenticated user (JWT). Used after Discord callback to get user info."""
+    return Response({"user": UserSerializer(request.user).data})
