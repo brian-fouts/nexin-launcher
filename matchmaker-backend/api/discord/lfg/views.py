@@ -112,7 +112,6 @@ def lfg_create(request):
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     group = serializer.save()
-    LFGMember.objects.get_or_create(lfg=group, discord_id=group.created_by)
     group = LFGGroup.objects.prefetch_related("members").get(pk=group.pk)
     context = {"discord_id_to_username": get_discord_id_to_username([group.created_by])}
     return Response(LFGGroupSerializer(group, context=context).data, status=status.HTTP_201_CREATED)

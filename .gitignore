@@ -1,3 +1,6 @@
+# Cursor
+.cursor/
+
 # Environment and secrets
 .env
 .env.local

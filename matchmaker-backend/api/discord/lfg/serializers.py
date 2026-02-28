@@ -2,6 +2,8 @@ from rest_framework import serializers
 
 from api.models import LFGGroup, LFGMember, User
 
+from .service import create_lfg_group
+
 
 def get_discord_id_to_username(discord_ids):
     """Return a dict mapping discord_id -> username (site username or discord_username) for linked accounts."""
@@ -38,7 +40,13 @@ class LFGGroupCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         request = self.context.get("request")
         created_by = request.user.discord_id if request and request.user else None
-        return LFGGroup.objects.create(created_by=created_by, **validated_data)
+        return create_lfg_group(
+            discord_id=created_by,
+            start_time=validated_data["start_time"],
+            duration=validated_data["duration"],
+            max_party_size=validated_data.get("max_party_size"),
+            description=validated_data.get("description", ""),
+        )
 
 
 class LFGGroupSerializer(serializers.ModelSerializer):

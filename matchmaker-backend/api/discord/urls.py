@@ -1,10 +1,9 @@
 from django.urls import include, path
 
-from . import views
+from . import interactions, views
 
-# Discord integration routes. Add subroutes here for Discord commands, e.g.:
-# path("commands/", include("api.discord.commands.urls")),
 urlpatterns = [
     path("", views.discord_root),
+    path("interactions/", interactions.DiscordInteractionsView.as_view()),
     path("lfg/", include("api.discord.lfg.urls")),
 ]

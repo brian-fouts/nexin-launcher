@@ -151,6 +151,12 @@ DISCORD_TOKEN_URL = "https://discord.com/api/oauth2/token"
 DISCORD_USER_URL = "https://discord.com/api/users/@me"
 DISCORD_OAUTH_SCOPES = "identify email"
 
+# Discord bot (slash commands via Interactions Endpoint URL)
+DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
+DISCORD_PUBLIC_KEY = os.environ.get("DISCORD_PUBLIC_KEY", "")
+# Optional: linked in /lfg reply (e.g. https://matchmaker.example.com)
+MATCHMAKER_FRONTEND_URL = os.environ.get("MATCHMAKER_FRONTEND_URL", "")
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
