@@ -23,6 +23,31 @@ docker-compose up --build
 
 The matchmaker frontend proxies `/api` to the matchmaker backend in dev, so the UI works without CORS.
 
+## Deployment (hostnames from .env)
+
+For local development, URLs default to localhost and the ports above. When you deploy (e.g. behind nginx with your own hostnames), set the following in `.env` so the app uses your public URLs:
+
+| Hostname | Service |
+|----------|---------|
+| `matchmaker.loki-console.com` | matchmaker-frontend |
+| `matchmaker-api.loki-console.com` | matchmaker-backend |
+| `game.loki-console.com` | game-frontend |
+| `game-api.loki-console.com` | game-backend |
+
+In `.env` set (and add the redirect URLs in Discord OAuth2):
+
+- `CORS_ORIGINS=https://matchmaker.loki-console.com,https://game.loki-console.com`
+- `GAME_FRONTEND_URL=https://game.loki-console.com`
+- `DISCORD_FRONTEND_REDIRECT=https://matchmaker.loki-console.com/discord-callback`
+- `DISCORD_FRONTEND_REDIRECT_LINK=https://matchmaker.loki-console.com/discord-link-callback`
+- `VITE_DISCORD_AUTHORIZE_URL=https://matchmaker-api.loki-console.com`
+- `VITE_API_URL=https://matchmaker-api.loki-console.com`
+- `VITE_WS_URL=wss://matchmaker-api.loki-console.com`
+- `VITE_GAME_API_URL=https://game-api.loki-console.com`
+- `MATCHMAKER_FRONTEND_URL=https://matchmaker.loki-console.com`
+
+See `.env.example` for a commented production block.
+
 ## Matchmaker backend
 
 - **Tests**: All matchmaker backend code is covered by automated tests (pytest + Django test client).

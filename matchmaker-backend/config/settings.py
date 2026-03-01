@@ -22,7 +22,7 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-secret-change-in-productio
 
 DEBUG = os.environ.get("DEBUG", "true").lower() in ("true", "1", "yes")
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,matchmaker-backend").split(",")
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
 
 # api first so api.User is registered before anything that references AUTH_USER_MODEL (e.g. admin
 # can still be loaded by migration discovery; with api first, User exists when it’s resolved).
