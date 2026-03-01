@@ -17,8 +17,23 @@ logging.basicConfig(
 )
 log = logging.getLogger("nexin-bot")
 
+# Gateway intents: what events the bot receives.
 intents = discord.Intents.default()
-intents.message_content = True
+intents.message_content = True  # Read message content (privileged; enable in Developer Portal)
+
+# Permissions to request when inviting the bot (OAuth2 URL).
+# Invite URL: https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions={value}&scope=bot%20applications.commands
+BOT_INVITE_PERMISSIONS = discord.Permissions(
+    send_messages=True,
+    create_public_threads=True,
+    create_private_threads=True,
+    mention_everyone=True,
+    add_reactions=True,
+    use_application_commands=True,  # Slash commands
+    create_events=True,
+    manage_events=True,
+    send_polls=True,  # Create polls
+)
 
 
 class NexinBot(discord.Client):
@@ -36,6 +51,11 @@ class NexinBot(discord.Client):
 
     async def on_ready(self):
         log.info("Logged in as %s (id %s)", self.user, self.user.id if self.user else None)
+        invite_url = (
+            f"https://discord.com/oauth2/authorize?client_id={self.application_id}"
+            f"&permissions={BOT_INVITE_PERMISSIONS.value}&scope=bot%20applications.commands"
+        )
+        log.info("Invite URL: %s", invite_url)
 
 
 def main():

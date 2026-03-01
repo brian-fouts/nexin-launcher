@@ -1,2 +1,2 @@
-discord.py>=2.0,<3
+discord.py>=2.4,<3  # 2.4+ for send_polls permission
 requests>=2.31,<3
