@@ -54,14 +54,13 @@ def get_valid_moves(board, row, col):
         return []
     moves = []
     # Black moves down (row increases), Red moves up (row decreases)
-    # Kings can move both directions
-    directions = []
-    if piece in (BLACK, BLACK_KING):
-        directions.append((1, -1))   # down-left
-        directions.append((1, 1))    # down-right
-    if piece in (RED, RED_KING):
-        directions.append((-1, -1))  # up-left
-        directions.append((-1, 1))   # up-right
+    # Kings can move in all four diagonal directions
+    if is_king(piece):
+        directions = [(1, -1), (1, 1), (-1, -1), (-1, 1)]
+    elif piece == BLACK:
+        directions = [(1, -1), (1, 1)]
+    else:  # RED
+        directions = [(-1, -1), (-1, 1)]
     for dr, dc in directions:
         nr, nc = row + dr, col + dc
         if 0 <= nr < BOARD_SIZE and 0 <= nc < BOARD_SIZE and board[nr][nc] == EMPTY:
@@ -75,11 +74,13 @@ def get_valid_jumps(board, row, col):
     if piece == EMPTY:
         return []
     jumps = []
-    directions = []
-    if piece in (BLACK, BLACK_KING):
-        directions.extend([(1, -1), (1, 1)])
-    if piece in (RED, RED_KING):
-        directions.extend([(-1, -1), (-1, 1)])
+    # Kings can jump in all four diagonal directions
+    if is_king(piece):
+        directions = [(1, -1), (1, 1), (-1, -1), (-1, 1)]
+    elif piece == BLACK:
+        directions = [(1, -1), (1, 1)]
+    else:  # RED
+        directions = [(-1, -1), (-1, 1)]
     for dr, dc in directions:
         mr, mc = row + dr, col + dc
         jr, jc = row + 2 * dr, col + 2 * dc

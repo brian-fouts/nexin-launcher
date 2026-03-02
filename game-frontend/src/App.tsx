@@ -1,12 +1,30 @@
+import { useEffect } from 'react'
 import { Link, Route, Routes } from 'react-router-dom'
-import { AuthProvider } from './context/AuthContext'
+import { gameApi } from './api/client'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import Checkers from './pages/Checkers'
 import Health from './pages/Health'
-import Login from './pages/Login'
+
+function HeartbeatPoll() {
+  const { user } = useAuth()
+  useEffect(() => {
+    if (!user?.user_id || !user?.server_id) return
+    const tick = () => {
+      gameApi.heartbeat(user.user_id, user.server_id).catch(() => {
+        // ignore; will retry next interval
+      })
+    }
+    tick()
+    const id = setInterval(tick, 10_000)
+    return () => clearInterval(id)
+  }, [user?.user_id, user?.server_id])
+  return null
+}
 
 function App() {
   return (
     <AuthProvider>
+      <HeartbeatPoll />
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <nav
           style={{
@@ -24,14 +42,14 @@ function App() {
             Game API Health
           </Link>
           <Link to="/login" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
-            Login
+            Join Game
           </Link>
         </nav>
         <main style={{ flex: 1, padding: '1.5rem', maxWidth: 900, margin: '0 auto', width: '100%' }}>
           <Routes>
             <Route path="/" element={<Checkers />} />
             <Route path="/health" element={<Health />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={<Checkers />} />
           </Routes>
         </main>
       </div>
