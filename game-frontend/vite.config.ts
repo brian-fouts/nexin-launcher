@@ -12,6 +12,10 @@ export default defineConfig({
         target: process.env.GAME_BACKEND_URL || 'http://localhost:8001',
         changeOrigin: true,
       },
+      '/ws': {
+        target: process.env.GAME_BACKEND_URL || 'http://localhost:8001',
+        ws: true,
+      },
     },
   },
 })

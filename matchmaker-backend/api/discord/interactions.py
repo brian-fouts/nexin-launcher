@@ -18,8 +18,10 @@ from nacl.signing import VerifyKey
 from api.discord.lfg.service import create_lfg_group
 from api.discord.lfg.serializers import get_discord_id_to_username
 from api.models import LFGGroup, LFGMember
-from django.db import IntegrityError
 from django.core.exceptions import ValidationError
+from django.db.models import DateTimeField
+from django.db.models.expressions import RawSQL
+from django.db.models.functions import Now
 
 
 def _verify_discord_signature(body: bytes, signature_hex: str, timestamp: str) -> bool:
@@ -215,10 +217,18 @@ class DiscordInteractionsView(View):
                     "data": {"content": "You are not a member of that group.", "flags": 64},
                 })
 
-        # List current RSVPs
+        # List current RSVPs (only future or in-progress events: end_time > now)
+        active_groups = LFGGroup.objects.annotate(
+            end_time=RawSQL(
+                "start_time + (duration * interval '1 hour')",
+                [],
+                output_field=DateTimeField(),
+            )
+        ).filter(end_time__gt=Now())
+
         memberships = (
             LFGMember.objects.select_related("lfg")
-            .filter(discord_id=discord_id)
+            .filter(discord_id=discord_id, lfg__in=active_groups)
             .order_by("-joined_at")
         )
         if not memberships:
@@ -233,9 +243,11 @@ class DiscordInteractionsView(View):
         groups = [m.lfg for m in memberships]
         # Build mapping from Discord ids to usernames (site username or discord_username) when linked.
         creator_ids = list({g.created_by for g in groups})
-        # Optionally include the caller's own id as well.
         discord_ids = list(set(creator_ids + [discord_id]))
         id_to_username = get_discord_id_to_username(discord_ids)
+
+        # Application ID for Discord slash-command links (clickable, runs command in-app)
+        app_id = interaction.get("application_id") or getattr(settings, "DISCORD_CLIENT_ID", "")
 
         lines = []
         for m in memberships:
@@ -247,16 +259,15 @@ class DiscordInteractionsView(View):
                 time_part = group.start_time.isoformat()
             duration = group.duration
             creator_name = id_to_username.get(group.created_by, group.created_by)
-            lines.append(
-                f"- `{group.id}` by {creator_name}, {duration} hr(s), starts {time_part}"
-            )
+            base = f"- `{group.id}` by {creator_name}, {duration} hr(s), starts {time_part}"
+            if group.created_by != discord_id and app_id:
+                # Clickable link that runs /lfg_myrsps group_id:<id> when clicked (Discord in-app)
+                cmd_link = f"</lfg_myrsps group_id:{group.id}:{app_id}>"
+                lines.append(f"{base} — {cmd_link}")
+            else:
+                lines.append(f"{base} (you created)")
 
-        content = (
-            "Your current LFG RSVPs:\n"
-            + "\n".join(lines)
-            + "\n\nTo remove your RSVP from a group you did not create, run:\n"
-            + "`/lfg_myrsps group_id:<id>`"
-        )
+        content = "Your current LFG RSVPs:\n" + "\n".join(lines)
         return JsonResponse({
             "type": 4,
             "data": {"content": content, "flags": 64},

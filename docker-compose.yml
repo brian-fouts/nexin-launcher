@@ -66,6 +66,7 @@ services:
     environment:
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379
       BACKEND_URL: http://matchmaker-backend:8000
       SERVER_NAME: "Nexin Game Server"
       SERVER_DESCRIPTION: "Default game server for matchmaking"
@@ -78,11 +79,12 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://matchmaker-frontend:5173,http://localhost:5174,http://127.0.0.1:5174,http://game-frontend:5174}
     depends_on:
       db: { condition: service_healthy }
+      redis: { condition: service_started }
       matchmaker-backend: { condition: service_healthy }
     command: >
       sh -c "python manage.py migrate --noinput &&
              python manage.py register_with_matchmaker &&
-             gunicorn --bind 0.0.0.0:8001 --workers 2 config.wsgi:application"
+             daphne -b 0.0.0.0 -p 8001 config.asgi:application"
     ports:
       - "8001:8001"
 

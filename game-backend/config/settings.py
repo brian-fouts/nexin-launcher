@@ -14,6 +14,7 @@ DEBUG = os.environ.get("DEBUG", "true").lower() in ("true", "1", "yes")
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
 
 INSTALLED_APPS = [
+    "daphne",
     "games",
     "django.contrib.contenttypes",
     "django.contrib.auth",
@@ -54,6 +55,21 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
+
+# Channel layers for WebSocket (checkers game). Use Redis if available, else in-memory.
+_redis_url = os.environ.get("REDIS_URL", "").strip()
+if _redis_url:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [_redis_url]},
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
+    }
 
 DATABASES = {
     "default": {

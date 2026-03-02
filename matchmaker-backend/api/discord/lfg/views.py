@@ -63,9 +63,17 @@ def lfg_my_rsvps(request):
             {"detail": "Link your Discord account to view your RSVPs."},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    active_groups = LFGGroup.objects.annotate(
+        end_time=RawSQL(
+            "start_time + (duration * interval '1 hour')",
+            [],
+            output_field=DateTimeField(),
+        )
+    ).filter(end_time__gt=Now())
+
     memberships = (
         LFGMember.objects.select_related("lfg")
-        .filter(discord_id=discord_id)
+        .filter(discord_id=discord_id, lfg__in=active_groups)
         .order_by("-joined_at")
     )
     groups = [m.lfg for m in memberships]
@@ -96,9 +104,17 @@ def lfg_my_rsvps_by_discord(request):
     if not discord_id:
         return Response({"detail": "discord_id is required."}, status=status.HTTP_400_BAD_REQUEST)
 
+    active_groups = LFGGroup.objects.annotate(
+        end_time=RawSQL(
+            "start_time + (duration * interval '1 hour')",
+            [],
+            output_field=DateTimeField(),
+        )
+    ).filter(end_time__gt=Now())
+
     memberships = (
         LFGMember.objects.select_related("lfg")
-        .filter(discord_id=discord_id)
+        .filter(discord_id=discord_id, lfg__in=active_groups)
         .order_by("-joined_at")
     )
     groups = [m.lfg for m in memberships]
