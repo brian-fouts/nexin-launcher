@@ -75,19 +75,45 @@ def main():
         )
 
     @client.tree.command(
+        name="sync",
+        description="Manually sync application commands with Discord",
+    )
+    @app_commands.checks.has_permissions(administrator=True)
+    async def sync_commands(interaction: discord.Interaction):
+        """Manually trigger app command sync, primarily for admins."""
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        try:
+            if interaction.guild:
+                synced = await client.tree.sync(guild=interaction.guild)
+                scope = f"guild {interaction.guild.id}"
+            else:
+                synced = await client.tree.sync()
+                scope = "global"
+            await interaction.followup.send(
+                f"Synced {len(synced)} command(s) for {scope}.",
+                ephemeral=True,
+            )
+        except discord.DiscordException as e:
+            log.exception("Manual command sync failed")
+            await interaction.followup.send(
+                f"Command sync failed: {e}",
+                ephemeral=True,
+            )
+
+    @client.tree.command(
         name="lfg",
         description="Create a looking-for-group session",
     )
     @app_commands.describe(
         duration="Duration in hours",
-        start_time="When to start (ISO datetime, or leave empty for 5 min from now)",
+        start_time="Required. Start time in ISO 8601 UTC, e.g. 2026-03-02T20:30:00Z",
         max_party_size="Maximum party size (optional)",
         description="What the session is about",
     )
     async def lfg(
         interaction: discord.Interaction,
         duration: float,
-        start_time: str | None = None,
+        start_time: str,
         max_party_size: int | None = None,
         description: str | None = None,
     ):
@@ -113,9 +139,8 @@ def main():
             "discord_id": str(interaction.user.id),
             "duration": duration,
             "description": description or "",
+            "start_time": start_time,
         }
-        if start_time:
-            payload["start_time"] = start_time
         if max_party_size is not None and max_party_size >= 1:
             payload["max_party_size"] = max_party_size
 

@@ -115,16 +115,26 @@ class DiscordInteractionsView(View):
             })
 
         start_time_str = _get_option(options, "start_time")
-        if start_time_str:
-            try:
-                start_time = datetime.fromisoformat(start_time_str.replace("Z", "+00:00"))
-                if start_time.tzinfo is None:
-                    start_time = timezone.make_aware(start_time)
-            except (ValueError, TypeError):
-                start_time = timezone.now() + timedelta(minutes=5)
-        else:
-            # Default: 5 minutes from now so the group appears as "upcoming"
-            start_time = timezone.now() + timedelta(minutes=5)
+        if not start_time_str:
+            return JsonResponse({
+                "type": 4,
+                "data": {
+                    "content": "start_time is required. Use ISO 8601 UTC, e.g. 2026-03-02T20:30:00Z.",
+                    "flags": 64,
+                },
+            })
+        try:
+            start_time = datetime.fromisoformat(start_time_str.replace("Z", "+00:00"))
+            if start_time.tzinfo is None:
+                start_time = timezone.make_aware(start_time)
+        except (ValueError, TypeError):
+            return JsonResponse({
+                "type": 4,
+                "data": {
+                    "content": "Invalid start_time format. Use ISO 8601 UTC, e.g. 2026-03-02T20:30:00Z.",
+                    "flags": 64,
+                },
+            })
 
         max_party_size = _get_option(options, "max_party_size")
         if max_party_size is not None:

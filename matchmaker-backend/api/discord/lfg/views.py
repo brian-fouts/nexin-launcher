@@ -156,16 +156,25 @@ def lfg_create_by_discord(request):
     if duration <= 0:
         return Response({"detail": "duration must be greater than 0."}, status=status.HTTP_400_BAD_REQUEST)
 
-    start_time_str = (data.get("start_time") or "").strip() or None
-    if start_time_str:
-        try:
-            start_time = datetime.fromisoformat(start_time_str.replace("Z", "+00:00"))
-            if start_time.tzinfo is None:
-                start_time = timezone.make_aware(start_time)
-        except (ValueError, TypeError):
-            start_time = timezone.now() + timedelta(minutes=5)
-    else:
-        start_time = timezone.now() + timedelta(minutes=5)
+    start_time_str = (data.get("start_time") or "").strip()
+    if not start_time_str:
+        return Response(
+            {
+                "detail": "start_time is required (ISO 8601 UTC, e.g. 2026-03-02T20:30:00Z).",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    try:
+        start_time = datetime.fromisoformat(start_time_str.replace("Z", "+00:00"))
+        if start_time.tzinfo is None:
+            start_time = timezone.make_aware(start_time)
+    except (ValueError, TypeError):
+        return Response(
+            {
+                "detail": "Invalid start_time format. Use ISO 8601 UTC, e.g. 2026-03-02T20:30:00Z.",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     max_party_size = data.get("max_party_size")
     if max_party_size is not None:

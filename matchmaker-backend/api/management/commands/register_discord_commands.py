@@ -36,9 +36,9 @@ class Command(BaseCommand):
                 },
                 {
                     "name": "start_time",
-                    "description": "When to start (ISO datetime, or leave empty for 5 min from now)",
+                    "description": "Required. Start time in ISO 8601 UTC, e.g. 2026-03-02T20:30:00Z",
                     "type": 3,  # STRING
-                    "required": False,
+                    "required": True,
                 },
                 {
                     "name": "max_party_size",
