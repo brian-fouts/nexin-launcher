@@ -2,7 +2,7 @@
  * Central API client. Use relative paths so Vite proxy (dev) or reverse proxy (prod) can forward to the backend.
  * Sends JWT Bearer token when available (see authStorage).
  */
-import { getAccessToken } from './authStorage'
+import { clearAuth, getAccessToken } from './authStorage'
 
 const BASE = import.meta.env.VITE_API_URL ?? ''
 const API_V1 = '/api/v1'
@@ -31,6 +31,21 @@ async function request<T>(
       body = JSON.parse(text)
     } catch {
       body = text
+    }
+    if (res.status === 401) {
+      // Clear any stale auth and redirect to login, preserving the original path.
+      try {
+        clearAuth()
+      } catch {
+        // ignore storage errors
+      }
+      const currentUrl =
+        typeof window !== 'undefined' ? window.location.pathname + window.location.search + window.location.hash : '/'
+      const params = new URLSearchParams({ next: currentUrl })
+      const loginPath = `/login?${params.toString()}`
+      if (typeof window !== 'undefined' && window.location.pathname + window.location.search !== loginPath) {
+        window.location.assign(loginPath)
+      }
     }
     throw new ApiError(res.status, body)
   }
@@ -182,6 +197,11 @@ export interface LFGGroup {
   members: LFGMember[]
 }
 
+export interface LFGMyRsvp {
+  lfg: LFGGroup
+  joined_at: string
+}
+
 export interface LFGGroupCreate {
   /** Omit when authenticated; backend uses request.user.discord_id */
   created_by?: string
@@ -330,6 +350,20 @@ export const api = {
         return request<LFGMember>(`${API_V1}/discord/lfg/${lfgId}/join/`, {
           method: 'POST',
           body: JSON.stringify({ discord_id: discordId }),
+        })
+      },
+      leave(lfgId: string, discordId: string): Promise<void> {
+        return request<void>(`${API_V1}/discord/lfg/${lfgId}/leave/`, {
+          method: 'POST',
+          body: JSON.stringify({ discord_id: discordId }),
+        })
+      },
+      myRsvps(): Promise<LFGMyRsvp[]> {
+        return request<LFGMyRsvp[]>(`${API_V1}/discord/lfg/my-rsvps/`)
+      },
+      leaveMine(lfgId: string): Promise<void> {
+        return request<void>(`${API_V1}/discord/lfg/my-rsvps/${lfgId}/leave/`, {
+          method: 'POST',
         })
       },
     },

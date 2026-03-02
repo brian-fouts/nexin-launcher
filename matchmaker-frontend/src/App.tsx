@@ -10,6 +10,7 @@ import Home from './pages/Home'
 import LFGGroups from './pages/LFGGroups'
 import LFGDetail from './pages/LFGDetail'
 import CreateLFG from './pages/CreateLFG'
+import LFGMyRsvps from './pages/LFGMyRsvps'
 import DiscordCallback from './pages/DiscordCallback'
 import DiscordLinkCallback from './pages/DiscordLinkCallback'
 import Login from './pages/Login'
@@ -46,6 +47,11 @@ function App() {
         <Link to="/lfg" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
           LFG
         </Link>
+        {user && (
+          <Link to="/lfg/my-rsvps" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
+            My RSVPs
+          </Link>
+        )}
         {user && (
           <Link to="/apps" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
             Apps
@@ -85,6 +91,7 @@ function App() {
           <Route path="/lfg" element={<LFGGroups />} />
           <Route path="/lfg/new" element={<CreateLFG />} />
           <Route path="/lfg/:lfgId" element={<LFGDetail />} />
+          <Route path="/lfg/my-rsvps" element={<LFGMyRsvps />} />
           <Route path="/account" element={<MyAccount />} />
           <Route path="/discord-callback" element={<DiscordCallback />} />
           <Route path="/discord-link-callback" element={<DiscordLinkCallback />} />

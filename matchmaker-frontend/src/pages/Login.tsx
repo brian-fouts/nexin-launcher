@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useLogin } from '../api/hooks'
 
@@ -12,6 +12,7 @@ export default function Login() {
   const [username, setUsername] = useState('test')
   const [password, setPassword] = useState('test')
   const navigate = useNavigate()
+  const location = useLocation()
   const { setUserFromResponse } = useAuth()
   const login = useLogin()
 
@@ -23,7 +24,9 @@ export default function Login() {
       {
         onSuccess: (data) => {
           setUserFromResponse(data)
-          navigate('/', { replace: true })
+          const search = new URLSearchParams(location.search)
+          const next = search.get('next') || '/'
+          navigate(next, { replace: true })
         },
       }
     )

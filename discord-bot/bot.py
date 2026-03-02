@@ -205,6 +205,154 @@ def main():
             content += f" View and share: {link}"
         await interaction.followup.send(content)
 
+    @client.tree.command(
+        name="lfg_myrsps",
+        description="View and manage your LFG RSVPs",
+    )
+    async def lfg_myrsps(
+        interaction: discord.Interaction,
+        group_id: str | None = None,
+    ):
+        backend_url = (os.environ.get("MATCHMAKER_BACKEND_URL") or "").strip().rstrip("/")
+        bot_token = (os.environ.get("DISCORD_BOT_TOKEN") or "").strip()
+        if not backend_url or not bot_token:
+            await interaction.response.send_message(
+                "LFG is not configured (MATCHMAKER_BACKEND_URL / DISCORD_BOT_TOKEN).",
+                ephemeral=True,
+            )
+            return
+
+        discord_id = str(interaction.user.id)
+
+        # If a group_id is provided, attempt to remove the user's RSVP first.
+        if group_id:
+            await interaction.response.defer(ephemeral=True)
+
+            leave_url = f"{backend_url}/api/v1/discord/lfg/{group_id}/leave/"
+
+            def do_leave():
+                return requests.post(
+                    leave_url,
+                    json={"discord_id": discord_id},
+                    headers={"X-Discord-Bot-Token": bot_token, "Content-Type": "application/json"},
+                    timeout=10,
+                )
+
+            try:
+                leave_resp = await asyncio.to_thread(do_leave)
+            except requests.RequestException as e:
+                log.exception("LFG leave backend request failed")
+                await interaction.followup.send(
+                    f"Could not reach the matchmaker: {e!s}",
+                    ephemeral=True,
+                )
+                return
+
+            if leave_resp.status_code == 401:
+                await interaction.followup.send(
+                    "Bot token was rejected by the matchmaker.",
+                    ephemeral=True,
+                )
+                return
+            if leave_resp.status_code == 400:
+                try:
+                    detail = leave_resp.json().get("detail", leave_resp.text)
+                except Exception:
+                    detail = leave_resp.text or "Invalid request"
+                await interaction.followup.send(detail, ephemeral=True)
+                return
+            if leave_resp.status_code not in (200, 204):
+                await interaction.followup.send(
+                    f"Matchmaker returned an error when removing RSVP (HTTP {leave_resp.status_code}).",
+                    ephemeral=True,
+                )
+                return
+
+            # If we successfully removed, fall through to listing RSVPs.
+
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
+
+        list_url = f"{backend_url}/api/v1/discord/lfg/my-rsvps-by-discord/"
+        payload = {"discord_id": discord_id}
+
+        def do_post():
+            return requests.post(
+                list_url,
+                json=payload,
+                headers={"X-Discord-Bot-Token": bot_token, "Content-Type": "application/json"},
+                timeout=10,
+            )
+
+        try:
+            resp = await asyncio.to_thread(do_post)
+        except requests.RequestException as e:
+            log.exception("LFG my-rsvps backend request failed")
+            await interaction.followup.send(
+                f"Could not reach the matchmaker: {e!s}",
+                ephemeral=True,
+            )
+            return
+
+        if resp.status_code == 401:
+            await interaction.followup.send(
+                "Bot token was rejected by the matchmaker.",
+                ephemeral=True,
+            )
+            return
+        if resp.status_code == 400:
+            try:
+                detail = resp.json().get("detail", resp.text)
+            except Exception:
+                detail = resp.text or "Invalid request"
+            await interaction.followup.send(detail, ephemeral=True)
+            return
+        if resp.status_code != 200:
+            await interaction.followup.send(
+                f"Matchmaker returned an error (HTTP {resp.status_code}).",
+                ephemeral=True,
+            )
+            return
+
+        try:
+            items = resp.json()
+        except Exception:
+            await interaction.followup.send("Invalid response from matchmaker.", ephemeral=True)
+            return
+
+        if not items:
+            await interaction.followup.send(
+                "You do not have any active LFG RSVPs.",
+                ephemeral=True,
+            )
+            return
+
+        lines: list[str] = []
+        for item in items:
+            lfg = item.get("lfg") or {}
+            lfg_id = lfg.get("id", "")
+            start_iso = lfg.get("start_time", "")
+            duration = lfg.get("duration", "?")
+            created_by = lfg.get("created_by_username") or lfg.get("created_by", "")
+
+            # Discord relative time: <t:unix:f> when possible
+            try:
+                ts = int(datetime.fromisoformat(start_iso.replace("Z", "+00:00")).timestamp())
+                time_part = f"<t:{ts}:f>"
+            except Exception:
+                time_part = start_iso or "soon"
+
+            line = f"- `{lfg_id}` by {created_by or 'unknown'}, {duration} hr(s), starts {time_part}"
+            lines.append(line)
+
+        content = (
+            "Your current LFG RSVPs:\n"
+            + "\n".join(lines)
+            + "\n\nTo remove your RSVP from a group you did not create, run:\n"
+            + "`/lfg_myrsps group_id:<id>`"
+        )
+        await interaction.followup.send(content, ephemeral=True)
+
     client.run(token)
 
 

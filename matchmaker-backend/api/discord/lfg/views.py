@@ -17,6 +17,7 @@ from .serializers import (
     LFGGroupCreateSerializer,
     LFGGroupSerializer,
     LFGMemberSerializer,
+    LFGMyRSVPSerializer,
     get_discord_id_to_username,
 )
 from .service import create_lfg_group
@@ -51,6 +52,69 @@ def lfg_group_list(request):
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def lfg_my_rsvps(request):
+    """
+    List LFG groups that the authenticated user has RSVP'd to (via their Discord id).
+    """
+    discord_id = getattr(request.user, "discord_id", None)
+    if not discord_id:
+        return Response(
+            {"detail": "Link your Discord account to view your RSVPs."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    memberships = (
+        LFGMember.objects.select_related("lfg")
+        .filter(discord_id=discord_id)
+        .order_by("-joined_at")
+    )
+    groups = [m.lfg for m in memberships]
+    if not groups:
+        return Response([])
+    member_ids = list(
+        LFGMember.objects.filter(lfg__in=groups).values_list("discord_id", flat=True).distinct()
+    )
+    creator_ids = list({g.created_by for g in groups})
+    discord_ids = list(set(member_ids) | set(creator_ids))
+    context = {"discord_id_to_username": get_discord_id_to_username(discord_ids)}
+    serializer = LFGMyRSVPSerializer(memberships, many=True, context=context)
+    return Response(serializer.data)
+
+
+@api_view(["POST"])
+def lfg_my_rsvps_by_discord(request):
+    """
+    List LFG groups that the given Discord id has RSVP'd to.
+    Used by the Discord bot. Auth: X-Discord-Bot-Token header.
+    Body: { "discord_id": "<string>" }.
+    """
+    if not _check_bot_token(request):
+        return Response({"detail": "Invalid or missing bot token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+    data = request.data or {}
+    discord_id = (data.get("discord_id") or "").strip()
+    if not discord_id:
+        return Response({"detail": "discord_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    memberships = (
+        LFGMember.objects.select_related("lfg")
+        .filter(discord_id=discord_id)
+        .order_by("-joined_at")
+    )
+    groups = [m.lfg for m in memberships]
+    if not groups:
+        return Response([])
+    member_ids = list(
+        LFGMember.objects.filter(lfg__in=groups).values_list("discord_id", flat=True).distinct()
+    )
+    creator_ids = list({g.created_by for g in groups})
+    discord_ids = list(set(member_ids) | set(creator_ids))
+    context = {"discord_id_to_username": get_discord_id_to_username(discord_ids)}
+    serializer = LFGMyRSVPSerializer(memberships, many=True, context=context)
+    return Response(serializer.data)
+
+
+@api_view(["GET"])
 def lfg_detail(request, lfg_id):
     """Return the database record for the LFG group with the given id, including members."""
     try:
@@ -79,6 +143,13 @@ def lfg_join(request, lfg_id):
         group = LFGGroup.objects.get(id=lfg_id)
     except LFGGroup.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+    if group.max_party_size is not None:
+        current_members = LFGMember.objects.filter(lfg=group).count()
+        if current_members >= group.max_party_size:
+            return Response(
+                {"detail": "This group is already full."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
     try:
         member, created = LFGMember.objects.get_or_create(
             lfg=group,
@@ -94,6 +165,69 @@ def lfg_join(request, lfg_id):
         LFGMemberSerializer(member, context=context).data,
         status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
     )
+
+
+@api_view(["POST"])
+def lfg_leave(request, lfg_id):
+    """
+    Remove a user's RSVP from an LFG group.
+    Body: { "discord_id": "<string>" }.
+    Cannot be used to remove the group creator.
+    """
+    discord_id = (request.data or {}).get("discord_id")
+    if not discord_id or not str(discord_id).strip():
+        return Response(
+            {"detail": "discord_id is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    discord_id = str(discord_id).strip()
+    try:
+        group = LFGGroup.objects.get(id=lfg_id)
+    except LFGGroup.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    if group.created_by == discord_id:
+        return Response(
+            {"detail": "The creator of the group cannot remove their own RSVP."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    deleted, _ = LFGMember.objects.filter(lfg=group, discord_id=discord_id).delete()
+    if not deleted:
+        return Response(
+            {"detail": "This user is not a member of the group."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def lfg_leave_mine(request, lfg_id):
+    """
+    Remove the authenticated user's RSVP from an LFG group.
+    Only allowed when the user is not the creator of the group.
+    """
+    discord_id = getattr(request.user, "discord_id", None)
+    if not discord_id:
+        return Response(
+            {"detail": "Link your Discord account to manage your RSVPs."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    try:
+        group = LFGGroup.objects.get(id=lfg_id)
+    except LFGGroup.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    if group.created_by == discord_id:
+        return Response(
+            {"detail": "You cannot remove your RSVP from a group you created."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    deleted, _ = LFGMember.objects.filter(lfg=group, discord_id=discord_id).delete()
+    if not deleted:
+        return Response(
+            {"detail": "You are not a member of this group."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(["POST"])

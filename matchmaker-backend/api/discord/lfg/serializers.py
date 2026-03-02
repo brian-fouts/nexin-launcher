@@ -71,3 +71,13 @@ class LFGGroupSerializer(serializers.ModelSerializer):
 
     def get_created_by_username(self, obj):
         return self.context.get("discord_id_to_username", {}).get(obj.created_by)
+
+
+class LFGMyRSVPSerializer(serializers.ModelSerializer):
+    """Representation of an authenticated user's RSVP: the group plus when they joined."""
+
+    lfg = LFGGroupSerializer(read_only=True)
+
+    class Meta:
+        model = LFGMember
+        fields = ["lfg", "joined_at"]

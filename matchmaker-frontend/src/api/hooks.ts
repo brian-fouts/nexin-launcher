@@ -9,6 +9,7 @@ import {
   type AppCreate,
   type AppUpdate,
   type LFGGroupCreate,
+  type LFGMyRsvp,
   type LoginPayload,
   type RegisterPayload,
   type ServerCreate,
@@ -208,6 +209,35 @@ export function useLfgJoin(lfgId: string | null) {
     mutationFn: (discordId: string) => api.discord.lfg.join(lfgId!, discordId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.lfg.detail(lfgId) })
+      qc.invalidateQueries({ queryKey: queryKeys.lfg.list() })
+    },
+  })
+}
+
+export function useLfgLeave(lfgId: string | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (discordId: string) => api.discord.lfg.leave(lfgId!, discordId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.lfg.detail(lfgId) })
+      qc.invalidateQueries({ queryKey: queryKeys.lfg.list() })
+    },
+  })
+}
+
+export function useLfgMyRsvps() {
+  return useQuery<LFGMyRsvp[]>({
+    queryKey: queryKeys.lfg.myRsvps(),
+    queryFn: () => api.discord.lfg.myRsvps(),
+  })
+}
+
+export function useLfgLeaveMine() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (lfgId: string) => api.discord.lfg.leaveMine(lfgId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.lfg.myRsvps() })
       qc.invalidateQueries({ queryKey: queryKeys.lfg.list() })
     },
   })

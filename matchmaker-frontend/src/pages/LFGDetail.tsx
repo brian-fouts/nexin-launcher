@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useLfgGroup, useLfgJoin } from '../api/hooks'
+import { useLfgGroup, useLfgJoin, useLfgLeave } from '../api/hooks'
 
 function formatDate(s: string) {
   return new Date(s).toLocaleString()
@@ -15,13 +15,22 @@ export default function LFGDetail() {
   const { lfgId } = useParams<{ lfgId: string }>()
   const { data: group, isLoading, isError, error } = useLfgGroup(lfgId ?? null)
   const joinGroup = useLfgJoin(lfgId ?? null)
+  const leaveGroup = useLfgLeave(lfgId ?? null)
   const [discordId, setDiscordId] = useState('')
+  const [leaveDiscordId, setLeaveDiscordId] = useState('')
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault()
     if (!discordId.trim()) return
     joinGroup.mutate(discordId.trim())
     setDiscordId('')
+  }
+
+  const handleLeave = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!leaveDiscordId.trim()) return
+    leaveGroup.mutate(leaveDiscordId.trim())
+    setLeaveDiscordId('')
   }
 
   if (isLoading || !lfgId) return <p>Loading…</p>
@@ -130,6 +139,40 @@ export default function LFGDetail() {
           )}
           {joinGroup.isSuccess && (
             <p style={{ color: 'var(--success)', fontSize: '0.875rem' }}>You're in! Refresh to see the list.</p>
+          )}
+        </form>
+      </div>
+      <div className="card" style={{ marginTop: '1rem' }}>
+        <h3 style={{ marginTop: 0 }}>Remove an RSVP</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
+          Enter a Discord user ID (snowflake) to remove their RSVP from this group. The creator of
+          the group cannot remove their own RSVP.
+        </p>
+        <form
+          onSubmit={handleLeave}
+          style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxWidth: 360 }}
+        >
+          <div>
+            <label htmlFor="lfg-leave-discord-id">Discord ID</label>
+            <input
+              id="lfg-leave-discord-id"
+              value={leaveDiscordId}
+              onChange={(e) => setLeaveDiscordId(e.target.value)}
+              placeholder="e.g. 123456789012345678"
+            />
+          </div>
+          <button type="submit" disabled={leaveGroup.isPending || !leaveDiscordId.trim()}>
+            {leaveGroup.isPending ? 'Removing…' : 'Remove RSVP'}
+          </button>
+          {leaveGroup.isError && (
+            <p style={{ color: 'var(--error)', fontSize: '0.875rem' }}>
+              {leaveGroup.error instanceof Error ? leaveGroup.error.message : 'Failed to remove RSVP'}
+            </p>
+          )}
+          {leaveGroup.isSuccess && (
+            <p style={{ color: 'var(--success)', fontSize: '0.875rem' }}>
+              RSVP removed. Refresh to see the updated list.
+            </p>
           )}
         </form>
       </div>

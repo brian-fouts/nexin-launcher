@@ -16,5 +16,6 @@ export const queryKeys = {
     all: ['api', 'discord', 'lfg'] as const,
     list: () => [...queryKeys.lfg.all, 'list'] as const,
     detail: (id: string | null) => [...queryKeys.lfg.all, 'detail', id] as const,
+    myRsvps: () => [...queryKeys.lfg.all, 'my-rsvps'] as const,
   },
 }

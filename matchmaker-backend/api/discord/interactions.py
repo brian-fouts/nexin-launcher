@@ -16,6 +16,9 @@ from nacl.exceptions import BadSignatureError
 from nacl.signing import VerifyKey
 
 from api.discord.lfg.service import create_lfg_group
+from api.discord.lfg.serializers import get_discord_id_to_username
+from api.models import LFGGroup, LFGMember
+from django.db import IntegrityError
 from django.core.exceptions import ValidationError
 
 
@@ -83,6 +86,9 @@ class DiscordInteractionsView(View):
 
         if command_name == "lfg":
             return self._handle_lfg(data, options)
+
+        if command_name == "lfg_myrsps":
+            return self._handle_lfg_myrsps(data, options)
 
         return JsonResponse({
             "type": 4,
@@ -171,4 +177,87 @@ class DiscordInteractionsView(View):
         return JsonResponse({
             "type": 4,
             "data": {"content": content},
+        })
+
+    def _handle_lfg_myrsps(self, interaction: dict, options: list):
+        # Resolve invoker's Discord id
+        member = interaction.get("member") or {}
+        user = member.get("user") or interaction.get("user") or {}
+        discord_id = str(user.get("id", ""))
+        if not discord_id:
+            return JsonResponse({
+                "type": 4,
+                "data": {"content": "Could not identify your Discord account.", "flags": 64},
+            })
+
+        # Optional group_id to remove user's RSVP from a specific group
+        group_id = _get_option(options, "group_id")
+        if group_id:
+            try:
+                group = LFGGroup.objects.get(id=group_id)
+            except (LFGGroup.DoesNotExist, ValueError):
+                return JsonResponse({
+                    "type": 4,
+                    "data": {"content": f"No LFG group found with id {group_id}.", "flags": 64},
+                })
+            if group.created_by == discord_id:
+                return JsonResponse({
+                    "type": 4,
+                    "data": {
+                        "content": "You cannot remove your RSVP from a group you created.",
+                        "flags": 64,
+                    },
+                })
+            deleted, _ = LFGMember.objects.filter(lfg=group, discord_id=discord_id).delete()
+            if not deleted:
+                return JsonResponse({
+                    "type": 4,
+                    "data": {"content": "You are not a member of that group.", "flags": 64},
+                })
+
+        # List current RSVPs
+        memberships = (
+            LFGMember.objects.select_related("lfg")
+            .filter(discord_id=discord_id)
+            .order_by("-joined_at")
+        )
+        if not memberships:
+            return JsonResponse({
+                "type": 4,
+                "data": {
+                    "content": "You do not have any active LFG RSVPs.",
+                    "flags": 64,
+                },
+            })
+
+        groups = [m.lfg for m in memberships]
+        # Build mapping from Discord ids to usernames (site username or discord_username) when linked.
+        creator_ids = list({g.created_by for g in groups})
+        # Optionally include the caller's own id as well.
+        discord_ids = list(set(creator_ids + [discord_id]))
+        id_to_username = get_discord_id_to_username(discord_ids)
+
+        lines = []
+        for m in memberships:
+            group = m.lfg
+            try:
+                ts = int(group.start_time.timestamp())
+                time_part = f"<t:{ts}:f>"
+            except Exception:
+                time_part = group.start_time.isoformat()
+            duration = group.duration
+            creator_name = id_to_username.get(group.created_by, group.created_by)
+            lines.append(
+                f"- `{group.id}` by {creator_name}, {duration} hr(s), starts {time_part}"
+            )
+
+        content = (
+            "Your current LFG RSVPs:\n"
+            + "\n".join(lines)
+            + "\n\nTo remove your RSVP from a group you did not create, run:\n"
+            + "`/lfg_myrsps group_id:<id>`"
+        )
+        return JsonResponse({
+            "type": 4,
+            "data": {"content": content, "flags": 64},
         })
