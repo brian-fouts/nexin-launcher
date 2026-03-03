@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { SUPPORTED_MODES, type SupportedMode } from '../api/client'
 import { useAuth } from '../contexts/AuthContext'
 import { useCreateApp } from '../api/hooks'
 
@@ -9,7 +10,14 @@ export default function CreateApp() {
   const createApp = useCreateApp()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [supportedModes, setSupportedModes] = useState<SupportedMode[]>([])
   const [createdSecret, setCreatedSecret] = useState<string | null>(null)
+
+  const toggleSupportedMode = (mode: SupportedMode) => {
+    setSupportedModes((prev) =>
+      prev.includes(mode) ? prev.filter((m) => m !== mode) : [...prev, mode]
+    )
+  }
 
   if (!user) {
     return <Navigate to="/login" replace />
@@ -19,7 +27,11 @@ export default function CreateApp() {
     e.preventDefault()
     if (!name.trim()) return
     createApp.mutate(
-      { name: name.trim(), description: description.trim() || undefined },
+      {
+        name: name.trim(),
+        description: description.trim() || undefined,
+        supported_modes: supportedModes.length > 0 ? supportedModes : undefined,
+      },
       {
         onSuccess: (data) => {
           if (data.app_secret) {
@@ -83,6 +95,27 @@ export default function CreateApp() {
             placeholder="Optional description"
             rows={3}
           />
+        </div>
+        <div>
+          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Supported modes</label>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+            How users can play this app (optional; can edit later):
+          </p>
+          {SUPPORTED_MODES.map((mode) => (
+            <label
+              key={mode.value}
+              style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.5rem', cursor: 'pointer' }}
+            >
+              <input
+                type="checkbox"
+                checked={supportedModes.includes(mode.value)}
+                onChange={() => toggleSupportedMode(mode.value)}
+              />
+              <span>
+                <strong>{mode.label}</strong> — {mode.description}
+              </span>
+            </label>
+          ))}
         </div>
         <button type="submit" disabled={createApp.isPending || !name.trim()}>
           {createApp.isPending ? 'Creating…' : 'Create app'}

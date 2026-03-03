@@ -291,41 +291,86 @@ export default function Checkers() {
     canvas.width = CANVAS_SIZE
     canvas.height = CANVAS_SIZE
 
-    // Board
+    // Board squares with gradients (felt/baize look)
     for (let row = 0; row < BOARD_SIZE; row++) {
       for (let col = 0; col < BOARD_SIZE; col++) {
+        const x = col * CELL_SIZE
+        const y = row * CELL_SIZE
         const isDark = (row + col) % 2 === 1
-        ctx.fillStyle = isDark ? '#2d5016' : '#e8dcc4'
-        ctx.fillRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+        let grad: CanvasGradient
+        if (isDark) {
+          grad = ctx.createLinearGradient(x, y, x + CELL_SIZE, y + CELL_SIZE)
+          grad.addColorStop(0, '#1a3310')
+          grad.addColorStop(0.4, '#2a5c18')
+          grad.addColorStop(1, '#143308')
+        } else {
+          grad = ctx.createLinearGradient(x, y, x + CELL_SIZE, y + CELL_SIZE)
+          grad.addColorStop(0, '#f8f2e4')
+          grad.addColorStop(0.5, '#e8dcc4')
+          grad.addColorStop(1, '#d9c9a8')
+        }
+        ctx.fillStyle = grad
+        ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE)
+        ctx.strokeStyle = isDark ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.35)'
+        ctx.lineWidth = 1
+        ctx.strokeRect(x + 0.5, y + 0.5, CELL_SIZE - 1, CELL_SIZE - 1)
       }
     }
 
     const drawPiece = (cx: number, cy: number, piece: number, shadow = false) => {
       const isBlack = piece === BLACK || piece === BLACK_KING
-      ctx.fillStyle = isBlack ? '#1a1a1a' : '#c41e3a'
-      ctx.strokeStyle = isBlack ? '#333' : '#8b0000'
-      ctx.lineWidth = 2
-      if (shadow) {
-        ctx.shadowColor = 'rgba(0,0,0,0.3)'
-        ctx.shadowBlur = 8
-        ctx.shadowOffsetY = 2
-      }
       const isKing = piece === BLACK_KING || piece === RED_KING
-      if (isKing) {
-        ctx.beginPath()
-        ctx.arc(cx, cy, PIECE_RADIUS, 0, Math.PI * 2)
-        ctx.fill()
-        ctx.stroke()
-        ctx.beginPath()
-        ctx.arc(cx, cy - KING_STACK_OFFSET, PIECE_RADIUS, 0, Math.PI * 2)
-        ctx.fill()
-        ctx.stroke()
-      } else {
-        ctx.beginPath()
-        ctx.arc(cx, cy, PIECE_RADIUS, 0, Math.PI * 2)
-        ctx.fill()
-        ctx.stroke()
+
+      if (shadow) {
+        ctx.shadowColor = 'rgba(0,0,0,0.45)'
+        ctx.shadowBlur = 14
+        ctx.shadowOffsetY = 4
       }
+
+      const drawOneDisk = (px: number, py: number) => {
+        const r = PIECE_RADIUS
+        // Main body: radial gradient for glossy sphere
+        const bodyGrad = ctx.createRadialGradient(px - r * 0.4, py - r * 0.4, 0, px, py, r * 1.2)
+        if (isBlack) {
+          bodyGrad.addColorStop(0, '#4a4a4a')
+          bodyGrad.addColorStop(0.25, '#2a2a2a')
+          bodyGrad.addColorStop(0.7, '#0f0f0f')
+          bodyGrad.addColorStop(1, '#1a1a1a')
+        } else {
+          bodyGrad.addColorStop(0, '#ff6b6b')
+          bodyGrad.addColorStop(0.2, '#e63939')
+          bodyGrad.addColorStop(0.6, '#b91c1c')
+          bodyGrad.addColorStop(1, '#7f1d1d')
+        }
+        ctx.fillStyle = bodyGrad
+        ctx.beginPath()
+        ctx.arc(px, py, r, 0, Math.PI * 2)
+        ctx.fill()
+        // Rim highlight
+        ctx.strokeStyle = isBlack ? 'rgba(120,120,120,0.6)' : 'rgba(255,200,200,0.7)'
+        ctx.lineWidth = 1.5
+        ctx.stroke()
+        // Specular highlight (top-left)
+        const specGrad = ctx.createRadialGradient(
+          px - r * 0.5, py - r * 0.5, 0,
+          px - r * 0.5, py - r * 0.5, r * 0.9
+        )
+        specGrad.addColorStop(0, 'rgba(255,255,255,0.5)')
+        specGrad.addColorStop(0.4, 'rgba(255,255,255,0.1)')
+        specGrad.addColorStop(1, 'rgba(255,255,255,0)')
+        ctx.fillStyle = specGrad
+        ctx.beginPath()
+        ctx.arc(px, py, r, 0, Math.PI * 2)
+        ctx.fill()
+      }
+
+      if (isKing) {
+        drawOneDisk(cx, cy)
+        drawOneDisk(cx, cy - KING_STACK_OFFSET)
+      } else {
+        drawOneDisk(cx, cy)
+      }
+
       if (shadow) {
         ctx.shadowColor = 'transparent'
         ctx.shadowBlur = 0
@@ -340,10 +385,16 @@ export default function Checkers() {
         if (row === dragRow && col === dragCol) continue
         const piece = state.board[row][col]
         if (piece === EMPTY) continue
-
         const cx = col * CELL_SIZE + CELL_SIZE / 2
         const cy = row * CELL_SIZE + CELL_SIZE / 2
+        // Drop shadow under piece
+        ctx.shadowColor = 'rgba(0,0,0,0.35)'
+        ctx.shadowBlur = 6
+        ctx.shadowOffsetY = 2
         drawPiece(cx, cy, piece)
+        ctx.shadowColor = 'transparent'
+        ctx.shadowBlur = 0
+        ctx.shadowOffsetY = 0
       }
     }
 
@@ -355,9 +406,18 @@ export default function Checkers() {
   }, [state, selected, dragState])
 
   return (
-    <div className="card" style={{ marginTop: '1rem', maxWidth: 'fit-content' }}>
-      <h1 style={{ marginTop: 0 }}>Checkers</h1>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
+    <div
+      className="card"
+      style={{
+        marginTop: '1rem',
+        maxWidth: 'fit-content',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.24), 0 2px 8px rgba(0,0,0,0.12)',
+        borderRadius: 16,
+        overflow: 'hidden',
+      }}
+    >
+      <h1 style={{ marginTop: 0, fontWeight: 700, letterSpacing: '-0.02em' }}>Checkers</h1>
+      <p style={{ color: 'var(--text-muted)', marginBottom: '1rem', fontSize: '0.9375rem' }}>
         First player to join is <strong>black</strong> and moves first. Open in two browser tabs to play.
       </p>
 
@@ -375,31 +435,62 @@ export default function Checkers() {
 
       {state && status === 'connected' && (
         <>
-          <div style={{ marginBottom: '0.75rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div
+            style={{
+              marginBottom: '1rem',
+              display: 'flex',
+              gap: '1rem',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+            }}
+          >
             {state.myColor && (
-              <span style={{ color: 'var(--text-muted)' }}>
-                You are <strong style={{ color: state.myColor === 'black' ? '#1a1a1a' : '#c41e3a' }}>{state.myColor}</strong>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.9375rem' }}>
+                You are <strong style={{ color: state.myColor === 'black' ? '#2d2d2d' : '#b91c1c' }}>{state.myColor}</strong>
               </span>
             )}
             {state.winner ? (
-              <span className="badge badge-ok">
+              <span
+                className="badge badge-ok"
+                style={{ boxShadow: '0 2px 8px rgba(34,197,94,0.3)', fontWeight: 600 }}
+              >
                 {state.winner === state.myColor ? 'You win!' : `${state.winner} wins!`}
               </span>
             ) : canMove ? (
-              <span className="badge badge-ok">
+              <span
+                className="badge badge-ok"
+                style={{ boxShadow: '0 2px 8px rgba(34,197,94,0.25)', fontWeight: 500 }}
+              >
                 {state.mustContinue ? 'Continue jumping!' : 'Your turn'}
               </span>
             ) : state.myColor ? (
-              <span style={{ color: 'var(--text-muted)' }}>Waiting for opponent…</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.9375rem' }}>Waiting for opponent…</span>
             ) : (
-              <span style={{ color: 'var(--text-muted)' }}>Spectating (2 players already in game)</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.9375rem' }}>Spectating (2 players already in game)</span>
             )}
-            <button type="button" onClick={sendReset} style={{ marginLeft: 'auto' }}>
+            <button
+              type="button"
+              onClick={sendReset}
+              style={{
+                marginLeft: 'auto',
+                fontWeight: 600,
+                boxShadow: '0 2px 8px rgba(99,102,241,0.35)',
+              }}
+            >
               New Game
             </button>
           </div>
 
-          <div style={{ position: 'relative', display: 'inline-block' }}>
+          <div
+            style={{
+              position: 'relative',
+              display: 'inline-block',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)',
+              borderRadius: 12,
+              padding: 8,
+              background: 'linear-gradient(145deg, #3d2914 0%, #2d1a0a 100%)',
+            }}
+          >
             <canvas
               ref={canvasRef}
               onClick={handleCanvasClick}
@@ -411,16 +502,16 @@ export default function Checkers() {
                 cursor: canMove ? (dragState ? 'grabbing' : 'grab') : 'default',
                 display: 'block',
                 borderRadius: 8,
-                border: '1px solid var(--border)',
+                boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.15)',
               }}
             />
-            {/* HTML overlay for highlights - updates immediately with React, no canvas redraw delay */}
+            {/* HTML overlay for highlights - updates immediately with React */}
             {(selected ?? dragState?.from) && state && (
               <div
                 style={{
                   position: 'absolute',
-                  top: 0,
-                  left: 0,
+                  top: 8,
+                  left: 8,
                   width: CANVAS_SIZE,
                   height: CANVAS_SIZE,
                   pointerEvents: 'none',
@@ -438,12 +529,13 @@ export default function Checkers() {
                       key={i}
                       style={{
                         position: 'absolute',
-                        left: m.to[1] * CELL_SIZE + CELL_SIZE / 2 - (PIECE_RADIUS + 4),
-                        top: m.to[0] * CELL_SIZE + CELL_SIZE / 2 - (PIECE_RADIUS + 4),
-                        width: (PIECE_RADIUS + 4) * 2,
-                        height: (PIECE_RADIUS + 4) * 2,
+                        left: m.to[1] * CELL_SIZE + CELL_SIZE / 2 - (PIECE_RADIUS + 6),
+                        top: m.to[0] * CELL_SIZE + CELL_SIZE / 2 - (PIECE_RADIUS + 6),
+                        width: (PIECE_RADIUS + 6) * 2,
+                        height: (PIECE_RADIUS + 6) * 2,
                         borderRadius: '50%',
-                        background: 'rgba(99, 102, 241, 0.4)',
+                        background: 'radial-gradient(circle at 30% 30%, rgba(129,140,248,0.5), rgba(99,102,241,0.35))',
+                        boxShadow: '0 0 20px rgba(99,102,241,0.4), inset 0 0 12px rgba(255,255,255,0.15)',
                       }}
                     />
                   ))}
@@ -451,13 +543,14 @@ export default function Checkers() {
                   <div
                     style={{
                       position: 'absolute',
-                      left: selected[1] * CELL_SIZE + 2,
-                      top: selected[0] * CELL_SIZE + 2,
-                      width: CELL_SIZE - 4,
-                      height: CELL_SIZE - 4,
-                      borderRadius: 4,
-                      border: '3px solid #6366f1',
+                      left: selected[1] * CELL_SIZE + 3,
+                      top: selected[0] * CELL_SIZE + 3,
+                      width: CELL_SIZE - 6,
+                      height: CELL_SIZE - 6,
+                      borderRadius: 6,
+                      border: '3px solid rgba(250,204,21,0.9)',
                       boxSizing: 'border-box',
+                      boxShadow: '0 0 16px rgba(250,204,21,0.5), inset 0 0 8px rgba(250,204,21,0.15)',
                     }}
                   />
                 )}

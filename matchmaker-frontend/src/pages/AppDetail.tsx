@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { SUPPORTED_MODES, type SupportedMode } from '../api/client'
 import {
   useApp,
   useCreateServer,
@@ -57,6 +58,7 @@ export default function AppDetail() {
   const generateOneTimeToken = useGenerateOneTimeToken()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [supportedModes, setSupportedModes] = useState<SupportedMode[]>([])
   const [editing, setEditing] = useState(false)
   const [newSecret, setNewSecret] = useState<string | null>(null)
   const [oneTimeToken, setOneTimeToken] = useState<string | null>(null)
@@ -79,6 +81,7 @@ export default function AppDetail() {
     if (app) {
       setName(app.name)
       setDescription(app.description)
+      setSupportedModes(Array.isArray(app.supported_modes) ? app.supported_modes : [])
     }
   }, [app])
 
@@ -86,8 +89,21 @@ export default function AppDetail() {
     e.preventDefault()
     if (!appId || !app) return
     updateApp.mutate(
-      { appId, data: { name: name.trim() || undefined, description: description.trim() || undefined } },
+      {
+        appId,
+        data: {
+          name: name.trim() || undefined,
+          description: description.trim() || undefined,
+          supported_modes: supportedModes,
+        },
+      },
       { onSuccess: () => setEditing(false) }
+    )
+  }
+
+  const toggleSupportedMode = (mode: SupportedMode) => {
+    setSupportedModes((prev) =>
+      prev.includes(mode) ? prev.filter((m) => m !== mode) : [...prev, mode]
     )
   }
 
@@ -173,6 +189,11 @@ export default function AppDetail() {
             </p>
             {app.description && (
               <p style={{ margin: '0.5rem 0 0' }}>{app.description}</p>
+            )}
+            {app.supported_modes && app.supported_modes.length > 0 && (
+              <p style={{ margin: '0.5rem 0 0', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                Modes: {SUPPORTED_MODES.filter((m) => app.supported_modes!.includes(m.value)).map((m) => m.label).join(', ')}
+              </p>
             )}
             <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
               App ID: {app.app_id}
@@ -391,6 +412,27 @@ export default function AppDetail() {
               <div>
                 <label htmlFor="edit-description">Description</label>
                 <textarea id="edit-description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Supported modes</label>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                  How users can play this app:
+                </p>
+                {SUPPORTED_MODES.map((mode) => (
+                  <label
+                    key={mode.value}
+                    style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.5rem', cursor: 'pointer' }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={supportedModes.includes(mode.value)}
+                      onChange={() => toggleSupportedMode(mode.value)}
+                    />
+                    <span>
+                      <strong>{mode.label}</strong> — {mode.description}
+                    </span>
+                  </label>
+                ))}
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button type="submit" disabled={updateApp.isPending}>

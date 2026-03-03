@@ -33,8 +33,11 @@ export default function Login() {
   }
 
   return (
-    <div className="card" style={{ maxWidth: 400, marginTop: '1rem' }}>
-      <h2 style={{ marginTop: 0 }}>Log in</h2>
+    <div className="card" style={{ maxWidth: 400 }}>
+      <div className="section-title" style={{ marginBottom: '0.5rem' }}>
+        <div className="section-title-bar" />
+        <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>Log in</h2>
+      </div>
       <a
         href={discordAuthorizeUrl}
         style={{

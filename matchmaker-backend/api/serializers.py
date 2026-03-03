@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from .models import App, Server, User
-from .models import generate_app_secret
+from .models import APP_SUPPORTED_MODES, generate_app_secret
 
 
 # --- Auth ---
@@ -46,33 +46,55 @@ class LoginSerializer(serializers.Serializer):
 # --- Apps ---
 
 
+def _validate_supported_modes(value):
+    if not isinstance(value, list):
+        raise serializers.ValidationError("supported_modes must be a list.")
+    invalid = [v for v in value if v not in APP_SUPPORTED_MODES]
+    if invalid:
+        raise serializers.ValidationError(
+            f"Invalid mode(s): {invalid}. Must be one or more of: {list(APP_SUPPORTED_MODES)}"
+        )
+    return value
+
+
 class AppListSerializer(serializers.ModelSerializer):
     """App in list/detail; no app_secret. Include creator username and user_id."""
 
     created_by_username = serializers.CharField(source="created_by.username", read_only=True)
     created_by_id = serializers.UUIDField(source="created_by.user_id", read_only=True)
+    supported_modes = serializers.ListField(child=serializers.CharField(), read_only=True)
 
     class Meta:
         model = App
-        fields = ["app_id", "name", "description", "created_at", "updated_at", "created_by_username", "created_by_id"]
+        fields = [
+            "app_id", "name", "description", "supported_modes",
+            "created_at", "updated_at", "created_by_username", "created_by_id",
+        ]
         read_only_fields = ["app_id", "created_at", "updated_at", "created_by_username", "created_by_id"]
 
 
 class AppCreateSerializer(serializers.ModelSerializer):
     """Create app; response includes app_secret once."""
 
+    supported_modes = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+
     class Meta:
         model = App
-        fields = ["name", "description"]
+        fields = ["name", "description", "supported_modes"]
+
+    def validate_supported_modes(self, value):
+        return _validate_supported_modes(value or [])
 
     def create(self, validated_data):
         request = self.context.get("request")
         user = request.user
         plaintext_secret = generate_app_secret()
         from django.contrib.auth.hashers import make_password
+        supported_modes = validated_data.pop("supported_modes", [])
         app = App.objects.create(
             name=validated_data["name"],
             description=validated_data.get("description", ""),
+            supported_modes=supported_modes,
             created_by=user,
             app_secret=make_password(plaintext_secret),
         )
@@ -81,11 +103,18 @@ class AppCreateSerializer(serializers.ModelSerializer):
 
 
 class AppUpdateSerializer(serializers.ModelSerializer):
-    """Update name/description only."""
+    """Update name, description, and supported_modes."""
+
+    supported_modes = serializers.ListField(child=serializers.CharField(), required=False)
 
     class Meta:
         model = App
-        fields = ["name", "description"]
+        fields = ["name", "description", "supported_modes"]
+
+    def validate_supported_modes(self, value):
+        if value is None:
+            return value
+        return _validate_supported_modes(value)
 
 
 # --- Servers ---

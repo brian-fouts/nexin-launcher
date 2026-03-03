@@ -17,7 +17,7 @@ export default function LFGMyRsvps() {
   if (isLoading) return <p>Loading…</p>
   if (isError) {
     return (
-      <div className="card" style={{ marginTop: '1rem' }}>
+      <div className="card">
         <p style={{ color: 'var(--error)' }}>
           {error instanceof Error ? error.message : 'Failed to load your RSVPs'}
         </p>
@@ -28,14 +28,20 @@ export default function LFGMyRsvps() {
   const items = data ?? []
 
   return (
-    <div style={{ marginTop: '1rem' }}>
+    <div>
+      <div className="section-title">
+        <div className="section-title-bar" />
+        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>My RSVPs</h1>
+      </div>
+      <p className="section-description">
+        All your upcoming events and confirmed attendance. Remove RSVPs for groups you did not create.
+      </p>
       <div className="card" style={{ marginBottom: '1rem' }}>
-        <h2 style={{ marginTop: 0 }}>My LFG RSVPs</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: 0 }}>
           These are groups you have RSVP&apos;d to using your linked Discord account. You can remove
           RSVPs for groups you did not create.
         </p>
-        <Link to="/lfg" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+        <Link to="/lfg" style={{ color: 'var(--accent)', fontSize: '0.875rem', marginTop: '0.5rem', display: 'inline-block' }}>
           ← Back to LFG
         </Link>
       </div>

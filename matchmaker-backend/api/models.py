@@ -103,6 +103,10 @@ def generate_app_secret():
     return secrets.token_urlsafe(32)
 
 
+# Supported hosting modes for an app (used in App.supported_modes).
+APP_SUPPORTED_MODES = ("official_host", "community_host", "self_hosted")
+
+
 class App(models.Model):
     """User-created app. Only the creator can update/delete or regenerate app_secret."""
 
@@ -117,6 +121,12 @@ class App(models.Model):
     app_secret = models.CharField(max_length=128)  # hashed; plaintext only in create/regenerate response
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
+    # Hosting modes: official_host (only app owner creates servers), community_host (users can request servers), self_hosted (users host themselves).
+    supported_modes = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of supported hosting modes: official_host, community_host, self_hosted",
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

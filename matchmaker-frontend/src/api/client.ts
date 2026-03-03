@@ -117,10 +117,21 @@ export interface AppTokenResponse {
 
 // --- App types ---
 
+/** Supported hosting modes for an app */
+export type SupportedMode = 'official_host' | 'community_host' | 'self_hosted'
+
+export const SUPPORTED_MODES: { value: SupportedMode; label: string; description: string }[] = [
+  { value: 'official_host', label: 'Official host', description: 'Only the server owner can create new servers' },
+  { value: 'community_host', label: 'Community host', description: 'Users can request a new server to be created' },
+  { value: 'self_hosted', label: 'Self hosted', description: 'Users must host the game themselves' },
+]
+
 export interface App {
   app_id: string
   name: string
   description: string
+  /** List of supported hosting modes */
+  supported_modes: SupportedMode[]
   created_at: string
   updated_at: string
   created_by_username: string
@@ -131,11 +142,13 @@ export interface App {
 export interface AppCreate {
   name: string
   description?: string
+  supported_modes?: SupportedMode[]
 }
 
 export interface AppUpdate {
   name?: string
   description?: string
+  supported_modes?: SupportedMode[]
 }
 
 // --- Server types ---

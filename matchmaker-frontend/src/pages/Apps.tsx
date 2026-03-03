@@ -16,7 +16,7 @@ function ServerOnlineUsers({ appId, serverId }: { appId: string; serverId: strin
       <button
         type="button"
         onClick={() => setExpanded((e) => !e)}
-        style={{ fontSize: '0.8125rem', padding: '0.35rem 0.6rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6 }}
+        style={{ fontSize: '0.8125rem', padding: '0.35rem 0.6rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 2 }}
       >
         {isLoading ? '…' : `${count} user${count !== 1 ? 's' : ''} online`} {expanded ? '▼' : '▶'}
       </button>
@@ -54,7 +54,7 @@ function ServerListForApp({ appId }: { appId: string }) {
       style={{
         marginTop: '0.5rem',
         border: '1px solid var(--border)',
-        borderRadius: 8,
+        borderRadius: 2,
         padding: '0.75rem',
         background: 'var(--bg)',
       }}
@@ -70,7 +70,7 @@ function ServerListForApp({ appId }: { appId: string }) {
               fontSize: '0.875rem',
               padding: '0.6rem 0.75rem',
               background: 'var(--surface)',
-              borderRadius: 6,
+              borderRadius: 2,
               border: '1px solid var(--border)',
               borderLeft: '3px solid var(--accent)',
             }}
@@ -134,20 +134,36 @@ export default function Apps() {
   }
 
   return (
-    <div style={{ marginTop: '1rem' }}>
-      <div className="card" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <h2 style={{ margin: 0 }}>Apps</h2>
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.5rem' }}>
+        <div className="section-title">
+          <div className="section-title-bar" />
+          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>Apps</h1>
+        </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <Link to="/apps/validate-token" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.875rem' }}>
             Validate token
           </Link>
-          <Link to="/apps/new" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
+          <Link
+            to="/apps/new"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              padding: '0.5rem 1rem',
+              borderRadius: 2,
+              fontSize: '0.75rem',
+              background: '#E8000E',
+              color: '#fff',
+              textDecoration: 'none',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
+          >
             + Create app
           </Link>
         </div>
       </div>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
-        All apps in the system. You can create apps and manage the ones you created.
+      <p className="section-description">
+        Installed and available applications in your Nexin ecosystem.
       </p>
       {isLoading && <p>Loading apps…</p>}
       {isError && (
@@ -165,13 +181,13 @@ export default function Apps() {
             return (
               <li
                 key={app.app_id}
-                style={{
-                  padding: '1rem',
-                  borderBottom: '1px solid var(--border)',
-                  background: 'var(--surface)',
-                  borderRadius: 8,
-                  marginBottom: '0.5rem',
-                }}
+              style={{
+                padding: '1rem',
+                borderBottom: '1px solid var(--border)',
+                background: 'var(--surface)',
+                borderRadius: 2,
+                marginBottom: '0.5rem',
+              }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -193,15 +209,15 @@ export default function Apps() {
                   </div>
                   <Link
                     to={`/apps/${app.app_id}`}
-                    style={{
-                      padding: '0.35rem 0.75rem',
-                      background: 'var(--accent)',
-                      color: 'white',
-                      borderRadius: 8,
-                      textDecoration: 'none',
-                      fontSize: '0.875rem',
-                      flexShrink: 0,
-                    }}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    background: '#E8000E',
+                    color: 'white',
+                    borderRadius: 2,
+                    textDecoration: 'none',
+                    fontSize: '0.875rem',
+                    flexShrink: 0,
+                  }}
                   >
                     {isOwner ? 'Manage' : 'View'}
                   </Link>

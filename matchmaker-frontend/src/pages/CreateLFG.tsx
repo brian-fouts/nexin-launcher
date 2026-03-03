@@ -45,9 +45,12 @@ export default function CreateLFG() {
     (maxNum === null || (!Number.isNaN(maxNum) && maxNum >= 1))
 
   return (
-    <div className="card" style={{ marginTop: '1rem', maxWidth: 520 }}>
-      <h2 style={{ marginTop: 0 }}>Create LFG group</h2>
-      <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1rem' }}>
+    <div className="card" style={{ maxWidth: 520 }}>
+      <div className="section-title">
+        <div className="section-title-bar" />
+        <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>Create LFG group</h2>
+      </div>
+      <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1rem', marginLeft: 12 }}>
         You'll be added as the first member (using your linked Discord account). Start time and duration are in your local timezone.
       </p>
       {!user.discord_id && (
