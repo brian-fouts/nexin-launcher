@@ -1,6 +1,7 @@
 from django.apps import AppConfig
 
-from .matchmaker_client import start_online_users_poller
+from .matchmaker_client import start_online_users_poller, start_status_poller
+from .room_registry import get_all_rooms_snapshot
 
 
 class GamesConfig(AppConfig):
@@ -10,3 +11,4 @@ class GamesConfig(AppConfig):
 
     def ready(self):
         start_online_users_poller()
+        start_status_poller(get_rooms_callback=get_all_rooms_snapshot)

@@ -15,17 +15,23 @@ const BLACK = 1
 const BLACK_KING = 3
 const RED_KING = 4
 
-function getWebSocketUrl(): string {
-  const apiUrl = (import.meta.env.VITE_GAME_API_URL ?? '').trim()
-  if (apiUrl.startsWith('http://')) {
-    return apiUrl.replace('http://', 'ws://').replace(/\/$/, '') + '/ws/checkers/'
+function getWebSocketUrl(roomId: string | null): string {
+  const base = (() => {
+    const apiUrl = (import.meta.env.VITE_GAME_API_URL ?? '').trim()
+    if (apiUrl.startsWith('http://')) {
+      return apiUrl.replace('http://', 'ws://').replace(/\/$/, '') + '/ws/checkers/'
+    }
+    if (apiUrl.startsWith('https://')) {
+      return apiUrl.replace('https://', 'wss://').replace(/\/$/, '') + '/ws/checkers/'
+    }
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${proto}//${window.location.host}/ws/checkers/`
+  })()
+  if (roomId && roomId.trim()) {
+    const sep = base.includes('?') ? '&' : '?'
+    return `${base}${sep}room_id=${encodeURIComponent(roomId.trim())}`
   }
-  if (apiUrl.startsWith('https://')) {
-    return apiUrl.replace('https://', 'wss://').replace(/\/$/, '') + '/ws/checkers/'
-  }
-  // Same-origin: use current host (Vite proxy or nginx will forward /ws to game-backend)
-  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${proto}//${window.location.host}/ws/checkers/`
+  return base
 }
 
 interface GameState {
@@ -39,7 +45,7 @@ interface GameState {
 
 export default function Checkers() {
   const [searchParams] = useSearchParams()
-  const { setUser } = useAuth()
+  const { user, setUser } = useAuth()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wsRef = useRef<WebSocket | null>(null)
   const [state, setState] = useState<GameState | null>(null)
@@ -58,20 +64,23 @@ export default function Checkers() {
   useEffect(() => {
     const ticket = searchParams.get('ticket')
     const serverId = searchParams.get('server_id') ?? undefined
+    const roomId = searchParams.get('room_id') ?? undefined
     if (!ticket || loginAttemptedRef.current) return
     loginAttemptedRef.current = true
     gameApi
       .login(ticket, serverId)
       .then((data) => {
-        setUser(serverId ? { ...data, server_id: serverId } : data)
+        setUser(serverId ? { ...data, server_id: serverId, room_id: roomId } : { ...data, room_id: roomId })
       })
       .catch(() => {
         // Ignore; user can still play checkers without matchmaker presence
       })
   }, [searchParams, setUser])
 
+  const roomId = searchParams.get('room_id') ?? user?.room_id ?? undefined
+
   const connect = useCallback(() => {
-    const url = getWebSocketUrl()
+    const url = getWebSocketUrl(roomId ?? null)
     if (import.meta.env.DEV) {
       console.log('[Checkers] Connecting to WebSocket:', url)
     }
@@ -112,7 +121,15 @@ export default function Checkers() {
       }
     }
 
-  }, [])
+  }, [roomId ?? null])
+
+  // Send identify with user_id once connected and we have user (for matchmaker room status)
+  useEffect(() => {
+    const ws = wsRef.current
+    if (ws?.readyState === WebSocket.OPEN && user?.user_id) {
+      ws.send(JSON.stringify({ type: 'identify', user_id: user.user_id }))
+    }
+  }, [status, user?.user_id])
 
   useEffect(() => {
     connect()

@@ -180,9 +180,11 @@ class ServerCreateSerializer(serializers.ModelSerializer):
 class AppServerCreateSerializer(serializers.ModelSerializer):
     """Create server via app JWT; app from request.app, no user creator."""
 
+    room_config = serializers.DictField(required=False, default=dict)
+
     class Meta:
         model = Server
-        fields = ["server_name", "server_description", "game_modes", "port", "game_frontend_url"]
+        fields = ["server_name", "server_description", "game_modes", "port", "game_frontend_url", "room_config"]
 
     def create(self, validated_data):
         request = self.context.get("request")
@@ -192,6 +194,7 @@ class AppServerCreateSerializer(serializers.ModelSerializer):
         ip = _get_client_ip(request)
         port = validated_data.pop("port", None)
         game_frontend_url = validated_data.pop("game_frontend_url", None) or ""
+        validated_data.pop("room_config", None)  # not on Server model; used by in-memory store only
         return Server.objects.create(
             app=app,
             server_name=validated_data["server_name"],

@@ -176,6 +176,17 @@ export function useDeleteServer(appId: string | null) {
   })
 }
 
+export function useCreateRoom(appId: string | null) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (serverId: string) => api.apps.servers.createRoom(appId!, serverId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.apps.servers(appId) })
+      qc.invalidateQueries({ queryKey: queryKeys.apps.all })
+    },
+  })
+}
+
 // --- Discord LFG hooks ---
 
 export function useLfgGroups() {

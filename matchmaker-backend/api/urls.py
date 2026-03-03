@@ -17,6 +17,7 @@ urlpatterns = [
     path("auth/app-token/", app_auth_views.app_token),
     path("app/server/", app_views.app_server_create),
     path("app/activity/", app_views.app_activity),
+    path("app/status/", app_views.app_status),
     path("app/online-users/", app_views.app_online_users),
     path("apps/", app_views.app_list),
     path("apps/<uuid:app_id>/", app_views.app_detail),
@@ -24,6 +25,7 @@ urlpatterns = [
     path("apps/<uuid:app_id>/one-time-token/", one_time_token_views.one_time_token_generate),
     path("apps/<uuid:app_id>/servers/", app_views.server_list),
     path("apps/<uuid:app_id>/servers/<uuid:server_id>/", app_views.server_detail),
+    path("apps/<uuid:app_id>/servers/<uuid:server_id>/rooms/", app_views.server_create_room),
     path("apps/<uuid:app_id>/servers/<uuid:server_id>/online-users/", app_views.server_online_users),
     path("one-time-token/validate/", one_time_token_views.one_time_token_validate),
 ]

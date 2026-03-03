@@ -27,6 +27,7 @@ class Command(BaseCommand):
         server_name = getattr(settings, "SERVER_NAME", "Game Server")
         server_description = getattr(settings, "SERVER_DESCRIPTION", "")
         modes_json = getattr(settings, "SERVER_GAME_MODES_JSON", "{}")
+        room_config_json = getattr(settings, "ROOM_CONFIG_JSON", "{}")
         server_port_raw = getattr(settings, "SERVER_PORT", "8001")
         game_frontend_url = getattr(settings, "GAME_FRONTEND_URL", "") or ""
 
@@ -41,6 +42,14 @@ class Command(BaseCommand):
         except (TypeError, ValueError) as e:
             self.stderr.write(
                 self.style.ERROR(f"SERVER_GAME_MODES must be valid JSON: {e}")
+            )
+            sys.exit(1)
+
+        try:
+            room_config = json.loads(room_config_json)
+        except (TypeError, ValueError) as e:
+            self.stderr.write(
+                self.style.ERROR(f"ROOM_CONFIG must be valid JSON: {e}")
             )
             sys.exit(1)
 
@@ -93,6 +102,7 @@ class Command(BaseCommand):
             "server_description": server_description,
             "game_modes": game_modes,
             "port": server_port,
+            "room_config": room_config,
         }
         if game_frontend_url:
             payload["game_frontend_url"] = game_frontend_url

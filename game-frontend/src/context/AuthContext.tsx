@@ -3,8 +3,8 @@ import type { LoginResponse } from '../api/client'
 
 const STORAGE_KEY = 'gameUser'
 
-/** Stored user may include server_id (set when joining via matchmaker with server_id in URL). */
-export type StoredUser = LoginResponse & { server_id?: string }
+/** Stored user may include server_id and room_id (set when joining via matchmaker). */
+export type StoredUser = LoginResponse & { server_id?: string; room_id?: string }
 
 function loadStoredUser(): StoredUser | null {
   try {

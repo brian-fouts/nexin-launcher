@@ -15,6 +15,11 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    deploy:
+      resources:
+        limits:
+          memory: 150M
 
   db:
     image: postgres:16-alpine
@@ -71,6 +76,7 @@ services:
       SERVER_NAME: "Nexin Game Server"
       SERVER_DESCRIPTION: "Default game server for matchmaking"
       SERVER_GAME_MODES: '{"mode": "deathmatch"}'
+      ROOM_CONFIG: '{"max_rooms": 10, "capacity_per_room": 2}'
       SERVER_PORT: "8001"
       # Hostnames from .env (deploy); default below for local
       GAME_FRONTEND_URL: ${GAME_FRONTEND_URL:-http://localhost:5174}

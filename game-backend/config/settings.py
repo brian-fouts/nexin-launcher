@@ -142,6 +142,8 @@ SERVER_NAME = os.environ.get("SERVER_NAME", "Game Server")
 SERVER_DESCRIPTION = os.environ.get("SERVER_DESCRIPTION", "")
 # JSON-encoded key-value pairs for game modes, e.g. '{"mode": "deathmatch"}'.
 SERVER_GAME_MODES_JSON = os.environ.get("SERVER_GAME_MODES", "{}")
+# Room config for multi-room support: max_rooms (int), capacity_per_room (int). Default checkers: 10 rooms, 2 players each.
+ROOM_CONFIG_JSON = os.environ.get("ROOM_CONFIG", '{"max_rooms": 10, "capacity_per_room": 2}')
 # Port this game server is running on (e.g. 8001).
 SERVER_PORT = os.environ.get("SERVER_PORT", "8001")
 # URL of the game frontend (client) for this server; used for Join links. No default.

@@ -153,6 +153,37 @@ export interface AppUpdate {
 
 // --- Server types ---
 
+export interface RoomConfig {
+  max_rooms?: number
+  capacity_per_room?: number
+}
+
+export interface ServerRoom {
+  room_id: string
+  app_id: string
+  server_id: string
+  created_by_id: string
+  created_at: string
+  member_ids: string[]
+}
+
+export interface RoomStatusPlayer {
+  user_id: string
+  username: string
+}
+
+export interface RoomStatusRoom {
+  room_id: string
+  capacity: number
+  /** When enriched by backend: { user_id, username }[]; otherwise string[] */
+  current_players: RoomStatusPlayer[] | string[]
+}
+
+export interface RoomStatus {
+  rooms: RoomStatusRoom[]
+  updated_at: string
+}
+
 export interface Server {
   server_id: string
   app_id: string
@@ -165,6 +196,17 @@ export interface Server {
   port: number | null
   game_frontend_url: string | null
   created_at: string
+  room_config?: RoomConfig
+  rooms?: ServerRoom[]
+  room_status?: RoomStatus | null
+}
+
+export interface CreateRoomResponse {
+  room_id: string
+  server_id: string
+  app_id: string
+  game_frontend_url: string | null
+  member_ids: string[]
 }
 
 export interface ServerCreate {
@@ -333,6 +375,11 @@ export const api = {
       },
       onlineUsers(appId: string, serverId: string): Promise<OnlineUser[]> {
         return request<OnlineUser[]>(`${API_V1}/apps/${appId}/servers/${serverId}/online-users/`)
+      },
+      createRoom(appId: string, serverId: string): Promise<CreateRoomResponse> {
+        return request<CreateRoomResponse>(`${API_V1}/apps/${appId}/servers/${serverId}/rooms/`, {
+          method: 'POST',
+        })
       },
     },
   },

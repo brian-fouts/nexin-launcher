@@ -110,3 +110,43 @@ def start_online_users_poller(server_id: str | None = None):
     sid = server_id or getattr(settings, "MATCHMAKER_SERVER_ID", "") or ""
     t = threading.Thread(target=_poll_online_users_loop, args=(sid,), daemon=True)
     t.start()
+
+
+def report_status(server_id: str, rooms: list[dict]) -> bool:
+    """Report room status to matchmaker. rooms: [ { room_id, capacity, current_players } ]. Returns True if request succeeded."""
+    token = _get_app_token()
+    if not token:
+        return False
+    backend_url = getattr(settings, "BACKEND_URL", "").rstrip("/")
+    url = f"{backend_url}/api/v1/app/status/"
+    data = json.dumps({"server_id": server_id, "rooms": rooms}).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=data,
+        method="POST",
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status in (200, 204)
+    except (urllib.error.HTTPError, urllib.error.URLError, OSError, ValueError):
+        return False
+
+
+def _poll_status_loop(server_id: str, get_rooms_callback):
+    """Background loop: every 5s report current rooms to matchmaker."""
+    while True:
+        if server_id and get_rooms_callback:
+            rooms = get_rooms_callback()
+            if rooms is not None:
+                report_status(server_id, rooms)
+        time.sleep(5)
+
+
+def start_status_poller(server_id: str | None = None, get_rooms_callback=None):
+    """Start the background thread that reports room status to the matchmaker.
+    get_rooms_callback() should return [ { room_id, capacity, current_players } ]."""
+    sid = server_id or getattr(settings, "MATCHMAKER_SERVER_ID", "") or ""
+    cb = get_rooms_callback
+    t = threading.Thread(target=_poll_status_loop, args=(sid, cb), daemon=True)
+    t.start()
