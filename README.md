@@ -9,23 +9,43 @@ Matchmaker backend (Django, Python 3.12, PostgreSQL) + matchmaker frontend (Reac
 - **Database**: PostgreSQL 16.
 - **Orchestration**: Docker and docker-compose for matchmaker-backend, matchmaker-frontend, and DB.
 
-## Run everything with Docker Compose
+## Running the app
+
+Two modes:
+
+### Local (Vite + Python debug)
 
 From the repo root:
 
 ```bash
-docker-compose up --build
+./deploy/start.sh
+# or: docker-compose up --build
 ```
 
-- **Matchmaker frontend**: http://localhost:5173  
-- **Matchmaker backend API**: http://localhost:8000 (versioned under `/api/v1/`, e.g. http://localhost:8000/api/v1/health/)  
+- **Matchmaker frontend** (Vite dev server): http://localhost:5173  
+- **Matchmaker backend API** (Python debug): http://localhost:8000 (e.g. http://localhost:8000/api/v1/health/)  
 - **DB**: internal; connect with `POSTGRES_*` env vars (see `docker-compose.yml`).
 
-The matchmaker frontend proxies `/api` to the matchmaker backend in dev, so the UI works without CORS.
+The matchmaker frontend proxies `/api` and `/ws` to the backend, so the UI works without CORS.
+
+### Deploy (Python production + built frontend at separate URL)
+
+From the repo root:
+
+```bash
+./deploy/start.sh deploy
+```
+
+Runs the full deploy stack from `docker-compose.deploy.yml`. Same hostnames as the original config:
+
+- **matchmaker-api.loki-console.com** → matchmaker-backend (API only, `DEBUG=false`)
+- **matchmaker.loki-console.com** → matchmaker-frontend (built static files, served by nginx in its own container)
+
+Also included: **nginx**, **redis**, **db**, **game-backend**, **discord-bot**. Frontend is built at image build time with `VITE_API_URL` / `VITE_WS_URL` pointing at the API host (set via `.env` or build args).
 
 ## Deployment (hostnames from .env)
 
-For local development, URLs default to localhost and the ports above. When you deploy (e.g. behind nginx with your own hostnames), set the following in `.env` so the app uses your public URLs:
+For local development, URLs default to localhost. When you deploy (e.g. behind nginx with your own hostnames), set the following in `.env` so the app uses your public URLs:
 
 | Hostname | Service |
 |----------|---------|

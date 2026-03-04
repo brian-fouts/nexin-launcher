@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Link, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { useMatchmakerWebSocket } from './api/useMatchmakerWebSocket'
 import { useAuth } from './contexts/AuthContext'
 import AppDetail from './pages/AppDetail'
 import Apps from './pages/Apps'
@@ -31,7 +30,6 @@ function App() {
   const navigate = useNavigate()
   const location = useLocation()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
-  useMatchmakerWebSocket()
 
   const handleLogout = () => {
     logout()

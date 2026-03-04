@@ -1,0 +1,12 @@
+# Used when building from repo root (e.g. matchmaker-backend Dockerfile.deploy)
+.git
+**/node_modules
+**/.env
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/dist
+**/.gitignore
+*.md
+.cursor
+agent-transcripts
