@@ -2,13 +2,10 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useRegister } from '../api/hooks'
-
-const discordAuthorizeUrl =
-  (import.meta.env.VITE_DISCORD_AUTHORIZE_URL
-    ? `${import.meta.env.VITE_DISCORD_AUTHORIZE_URL}/api/v1/auth/discord/authorize/`
-    : `${import.meta.env.VITE_API_URL ?? ''}/api/v1/auth/discord/authorize/`).trim() || '/api/v1/auth/discord/authorize/'
+import { getDiscordAuthorizeUrl } from '../api/authUrls'
 
 export default function Signup() {
+  const discordAuthorizeUrl = getDiscordAuthorizeUrl()
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')

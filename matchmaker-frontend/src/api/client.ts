@@ -32,8 +32,8 @@ async function request<T>(
     } catch {
       body = text
     }
-    if (res.status === 401) {
-      // Clear any stale auth and redirect to login, preserving the original path.
+    if (res.status === 401 || res.status === 403) {
+      // Clear any stale auth and redirect to login with "logged out" message; never show "API error 401/403" on any page.
       try {
         clearAuth()
       } catch {
@@ -41,11 +41,12 @@ async function request<T>(
       }
       const currentUrl =
         typeof window !== 'undefined' ? window.location.pathname + window.location.search + window.location.hash : '/'
-      const params = new URLSearchParams({ next: currentUrl })
+      const params = new URLSearchParams({ next: currentUrl, logged_out: '1' })
       const loginPath = `/login?${params.toString()}`
       if (typeof window !== 'undefined' && window.location.pathname + window.location.search !== loginPath) {
         window.location.assign(loginPath)
       }
+      throw new AuthRequiredError()
     }
     throw new ApiError(res.status, body)
   }
@@ -60,6 +61,14 @@ export class ApiError extends Error {
   ) {
     super(`API error ${status}`)
     this.name = 'ApiError'
+  }
+}
+
+/** Thrown when the backend returns 401 or 403. Redirect to login happens; do not show "API error 401/403" on other pages. */
+export class AuthRequiredError extends Error {
+  constructor() {
+    super('Session expired')
+    this.name = 'AuthRequiredError'
   }
 }
 

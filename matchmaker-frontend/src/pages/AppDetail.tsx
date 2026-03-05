@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { SUPPORTED_MODES, type RoomStatusPlayer, type RoomStatusRoom, type SupportedMode } from '../api/client'
+import { getGameFrontendBase } from '../api/gameFrontendUrl'
 import {
   useApp,
   useCreateRoom,
@@ -431,13 +432,14 @@ export default function AppDetail() {
                                             if (!appId) return
                                             generateOneTimeToken.mutate(appId, {
                                               onSuccess: (data) => {
-                                                const base = s.game_frontend_url!.replace(/\/$/, '')
+                                                const base = getGameFrontendBase(s.game_frontend_url)
                                                 const params = new URLSearchParams({
                                                   ticket: data.token,
                                                   server_id: s.server_id,
                                                   room_id: r.room_id,
                                                 })
-                                                window.open(`${base}/login?${params}`, '_blank', 'noopener,noreferrer')
+                                                if (base) window.open(`${base}/login?${params}`, '_blank', 'noopener,noreferrer')
+                                                else alert('Game URL is not configured for production. Set VITE_GAME_FRONTEND_URL.')
                                               },
                                             })
                                           }}
@@ -476,13 +478,14 @@ export default function AppDetail() {
                                     onSuccess: (roomData) => {
                                       generateOneTimeToken.mutate(appId, {
                                         onSuccess: (tokenData) => {
-                                          const base = (roomData.game_frontend_url ?? s.game_frontend_url)!.replace(/\/$/, '')
+                                          const base = getGameFrontendBase(roomData.game_frontend_url ?? s.game_frontend_url)
                                           const params = new URLSearchParams({
                                             ticket: tokenData.token,
                                             server_id: roomData.server_id,
                                             room_id: roomData.room_id,
                                           })
-                                          window.open(`${base}/login?${params}`, '_blank', 'noopener,noreferrer')
+                                          if (base) window.open(`${base}/login?${params}`, '_blank', 'noopener,noreferrer')
+                                          else alert('Game URL is not configured for production. Set VITE_GAME_FRONTEND_URL.')
                                         },
                                       })
                                     },
@@ -513,9 +516,10 @@ export default function AppDetail() {
                         if (!appId) return
                         generateOneTimeToken.mutate(appId, {
                           onSuccess: (data) => {
-                            const base = s.game_frontend_url!.replace(/\/$/, '')
+                            const base = getGameFrontendBase(s.game_frontend_url)
                             const params = new URLSearchParams({ ticket: data.token, server_id: s.server_id })
-                            window.open(`${base}/login?${params}`, '_blank', 'noopener,noreferrer')
+                            if (base) window.open(`${base}/login?${params}`, '_blank', 'noopener,noreferrer')
+                            else alert('Game URL is not configured for production. Set VITE_GAME_FRONTEND_URL.')
                           },
                         })
                       }}

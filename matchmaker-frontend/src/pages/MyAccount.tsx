@@ -1,10 +1,6 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-
-const discordLinkAuthorizeUrl =
-  (import.meta.env.VITE_DISCORD_AUTHORIZE_URL
-    ? `${import.meta.env.VITE_DISCORD_AUTHORIZE_URL}/api/v1/auth/discord/link/authorize/`
-    : `${import.meta.env.VITE_API_URL ?? ''}/api/v1/auth/discord/link/authorize/`).trim() || '/api/v1/auth/discord/link/authorize/'
+import { getDiscordLinkAuthorizeUrl } from '../api/authUrls'
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—'
@@ -13,6 +9,7 @@ function formatDate(iso: string | null): string {
 
 export default function MyAccount() {
   const { user } = useAuth()
+  const discordLinkAuthorizeUrl = getDiscordLinkAuthorizeUrl()
 
   if (!user) {
     return <Navigate to="/login" replace />

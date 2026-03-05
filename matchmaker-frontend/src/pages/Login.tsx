@@ -1,20 +1,30 @@
-import { useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useLogin } from '../api/hooks'
-
-const discordAuthorizeUrl =
-  (import.meta.env.VITE_DISCORD_AUTHORIZE_URL
-    ? `${import.meta.env.VITE_DISCORD_AUTHORIZE_URL}/api/v1/auth/discord/authorize/`
-    : `${import.meta.env.VITE_API_URL ?? ''}/api/v1/auth/discord/authorize/`).trim() || '/api/v1/auth/discord/authorize/'
+import { getDiscordAuthorizeUrl } from '../api/authUrls'
 
 export default function Login() {
+  const discordAuthorizeUrl = getDiscordAuthorizeUrl()
   const [username, setUsername] = useState('test')
   const [password, setPassword] = useState('test')
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { setUserFromResponse } = useAuth()
   const login = useLogin()
+  const [showLoggedOutMessage, setShowLoggedOutMessage] = useState(false)
+  const loggedOutParam = searchParams.get('logged_out') === '1'
+
+  // When we landed with logged_out=1, show the message and clear the param from URL
+  useEffect(() => {
+    if (loggedOutParam) {
+      setShowLoggedOutMessage(true)
+      const next = new URLSearchParams(searchParams)
+      next.delete('logged_out')
+      setSearchParams(next, { replace: true })
+    }
+  }, [loggedOutParam, searchParams, setSearchParams])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,6 +48,11 @@ export default function Login() {
         <div className="section-title-bar" />
         <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>Log in</h2>
       </div>
+      {showLoggedOutMessage && (
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1rem' }}>
+          You have been logged out.
+        </p>
+      )}
       <a
         href={discordAuthorizeUrl}
         style={{

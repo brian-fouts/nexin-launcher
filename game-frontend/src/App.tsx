@@ -8,9 +8,11 @@ import Health from './pages/Health'
 function HeartbeatPoll() {
   const { user } = useAuth()
   useEffect(() => {
-    if (!user?.user_id || !user?.server_id) return
+    const userId = user?.user_id
+    const serverId = user?.server_id
+    if (!userId || !serverId) return
     const tick = () => {
-      gameApi.heartbeat(user.user_id, user.server_id).catch(() => {
+      gameApi.heartbeat(userId, serverId).catch(() => {
         // ignore; will retry next interval
       })
     }
