@@ -132,6 +132,37 @@ services:
       - ./game-frontend:/app
       - /app/node_modules
 
+  tower-defense-backend:
+    build:
+      context: ./tower-defense-backend
+      dockerfile: Dockerfile
+    environment:
+      DJANGO_SECRET_KEY: tower-defense-dev-secret
+      DEBUG: "true"
+      ALLOWED_HOSTS: "*"
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             daphne -b 0.0.0.0 -p 8010 config.asgi:application"
+    ports:
+      - "8010:8010"
+
+  tower-defense-frontend:
+    build:
+      context: ./tower-defense-frontend
+      dockerfile: Dockerfile
+    environment:
+      TOWER_DEFENSE_BACKEND_URL: http://tower-defense-backend:8010
+    depends_on:
+      - tower-defense-backend
+    command: >
+      sh -c "npm install &&
+             npm run dev"
+    ports:
+      - "5180:5180"
+    volumes:
+      - ./tower-defense-frontend:/app
+      - /app/node_modules
+
   discord-bot:
     build:
       context: ./discord-bot
