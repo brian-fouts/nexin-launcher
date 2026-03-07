@@ -12,7 +12,9 @@ export function worldToBloodPixel(
   textureHeight: number
 ): BloodPixel {
   const nx = worldX / worldWidth + 0.5;
-  const nz = 0.5 - worldZ / worldDepth;
+  // Canvas Y grows downward. This mapping aligns world top (negative Z)
+  // with texture top, matching the rendered ground orientation.
+  const nz = worldZ / worldDepth + 0.5;
   const cx = Math.max(0, Math.min(1, nx));
   const cz = Math.max(0, Math.min(1, nz));
   return {

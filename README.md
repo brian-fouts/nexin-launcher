@@ -40,8 +40,10 @@ Runs the full deploy stack from `docker-compose.deploy.yml`. Same hostnames as t
 
 - **matchmaker-api.loki-console.com** → matchmaker-backend (API only, `DEBUG=false`)
 - **matchmaker.loki-console.com** → matchmaker-frontend (built static files, served by nginx in its own container)
+- **towerdefense-api.loki-console.com** → tower-defense-backend (API/WebSocket, `DEBUG=false`)
+- **towerdefense.loki-console.com** → tower-defense-frontend (built static files, served by nginx in its own container)
 
-Also included: **nginx**, **redis**, **db**, **game-backend**, **discord-bot**. Frontend is built at image build time with `VITE_API_URL` / `VITE_WS_URL` pointing at the API host (set via `.env` or build args).
+Also included: **nginx**, **redis**, **db**, **game-backend**, **discord-bot**. Frontend apps are built at image build time and served as static assets.
 
 ## Deployment (hostnames from .env)
 
@@ -53,6 +55,8 @@ For local development, URLs default to localhost. When you deploy (e.g. behind n
 | `matchmaker-api.loki-console.com` | matchmaker-backend |
 | `game.loki-console.com` | game-frontend |
 | `game-api.loki-console.com` | game-backend |
+| `towerdefense.loki-console.com` | tower-defense-frontend |
+| `towerdefense-api.loki-console.com` | tower-defense-backend |
 
 In `.env` set (and add the redirect URLs in Discord OAuth2):
 

@@ -14,6 +14,6 @@ describe("worldToBloodPixel", () => {
   it("clamps points outside world bounds", () => {
     const p = worldToBloodPixel(9999, -9999, 320, 320, 1024, 1024);
     expect(p.x).toBe(1023);
-    expect(p.y).toBe(1023);
+    expect(p.y).toBe(0);
   });
 });

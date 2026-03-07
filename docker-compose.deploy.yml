@@ -13,6 +13,8 @@ services:
       - matchmaker-frontend
       - game-backend
       - game-frontend
+      - tower-defense-backend
+      - tower-defense-frontend
 
   redis:
     image: redis:7-alpine
@@ -111,6 +113,27 @@ services:
              daphne -b 0.0.0.0 -p 8001 config.asgi:application"
     ports:
       - "8001:8001"
+
+  tower-defense-backend:
+    build:
+      context: ./tower-defense-backend
+      dockerfile: Dockerfile
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me-in-production}
+      DEBUG: "false"
+      ALLOWED_HOSTS: ${TOWER_DEFENSE_ALLOWED_HOSTS:-towerdefense-api.loki-console.com,towerdefense.loki-console.com}
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             daphne -b 0.0.0.0 -p 8010 config.asgi:application"
+    ports:
+      - "8010:8010"
+
+  tower-defense-frontend:
+    build:
+      context: .
+      dockerfile: tower-defense-frontend/Dockerfile.deploy
+    depends_on:
+      - tower-defense-backend
 
   discord-bot:
     build:

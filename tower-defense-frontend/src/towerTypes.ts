@@ -13,6 +13,7 @@ export type TowerType = (typeof TOWER_ORDER)[number];
 export type TowerDefinition = {
   label: string;
   description: string;
+  cost: number;
   range: number;
   damage: number;
   fireInterval: number;
@@ -22,6 +23,7 @@ export const TOWER_DEFINITIONS: Record<TowerType, TowerDefinition> = {
   machine_gun: {
     label: "Machine Gun Turret",
     description: "Very fast and very long range, low damage per hit.",
+    cost: 100,
     range: 130,
     damage: 4,
     fireInterval: 0.12,
@@ -29,6 +31,7 @@ export const TOWER_DEFINITIONS: Record<TowerType, TowerDefinition> = {
   flamethrower: {
     label: "Flamethrower Turret",
     description: "3s active / 2s inactive. Short range directional area damage.",
+    cost: 200,
     range: 45,
     damage: 20,
     fireInterval: 0.2,
@@ -36,6 +39,7 @@ export const TOWER_DEFINITIONS: Record<TowerType, TowerDefinition> = {
   cannon: {
     label: "Cannon Tower",
     description: "Slow firing, small tower range, large impact area.",
+    cost: 300,
     range: 70,
     damage: 60,
     fireInterval: 2.8,
@@ -43,6 +47,7 @@ export const TOWER_DEFINITIONS: Record<TowerType, TowerDefinition> = {
   laser: {
     label: "Laser Tower",
     description: "Continuous medium range beam with damage over time.",
+    cost: 400,
     range: 90,
     damage: 16,
     fireInterval: 0.1,
@@ -50,6 +55,7 @@ export const TOWER_DEFINITIONS: Record<TowerType, TowerDefinition> = {
   rocket: {
     label: "Rocket Tower",
     description: "Very long range, very slow fire, high damage, small blast radius.",
+    cost: 500,
     range: 150,
     damage: 140,
     fireInterval: 4.2,
@@ -57,6 +63,7 @@ export const TOWER_DEFINITIONS: Record<TowerType, TowerDefinition> = {
   slime: {
     label: "Slime Tower",
     description: "Fast goo shot: applies corrosion DoT and 50% slow for 5 seconds.",
+    cost: 600,
     range: 82,
     damage: 8,
     fireInterval: 0.6,
@@ -64,6 +71,7 @@ export const TOWER_DEFINITIONS: Record<TowerType, TowerDefinition> = {
   oil: {
     label: "Oil Tower",
     description: "Creates an oil puddle. Enemies touching it become oil-saturated.",
+    cost: 700,
     range: 20,
     damage: 0,
     fireInterval: 0.5,

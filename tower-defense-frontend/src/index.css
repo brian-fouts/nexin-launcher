@@ -17,9 +17,13 @@ body {
 }
 
 .container {
-  max-width: 1000px;
-  margin: 24px auto;
-  padding: 0 16px 24px;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 h1 {
@@ -31,8 +35,8 @@ h1 {
   display: flex;
   gap: 12px;
   align-items: center;
-  margin-bottom: 12px;
   flex-wrap: wrap;
+  margin: 0;
 }
 
 button {
@@ -63,8 +67,8 @@ select {
 
 .world {
   width: 100%;
-  max-width: 960px;
-  height: 540px;
+  flex: 1 1 auto;
+  min-height: 420px;
   background: #111827;
   border: 1px solid #334155;
   border-radius: 8px;
@@ -80,4 +84,5 @@ select {
 
 .hint {
   color: #94a3b8;
+  margin: 0;
 }

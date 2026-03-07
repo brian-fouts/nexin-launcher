@@ -5,6 +5,12 @@ export type BloodMistSpec = {
   radius: number;
 };
 
+export type ClampedXZ = {
+  x: number;
+  z: number;
+  clamped: boolean;
+};
+
 export function buildBloodMistSpecs(count: number, randomFn: () => number = Math.random): BloodMistSpec[] {
   const safeCount = Math.max(1, count);
   const specs: BloodMistSpec[] = [];
@@ -20,4 +26,26 @@ export function buildBloodMistSpecs(count: number, randomFn: () => number = Math
     });
   }
   return specs;
+}
+
+export function clampToRadius(
+  x: number,
+  z: number,
+  originX: number,
+  originZ: number,
+  maxRadius: number
+): ClampedXZ {
+  const r = Math.max(0.001, maxRadius);
+  const dx = x - originX;
+  const dz = z - originZ;
+  const dist = Math.hypot(dx, dz);
+  if (dist <= r) {
+    return { x, z, clamped: false };
+  }
+  const scale = r / dist;
+  return {
+    x: originX + dx * scale,
+    z: originZ + dz * scale,
+    clamped: true,
+  };
 }

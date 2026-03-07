@@ -10,6 +10,7 @@ export type MapDefinition = {
   depth: number;
   groundColor: string;
   trees: TreeDefinition[];
+  enemyPath?: Array<{ x: number; z: number }>;
 };
 
 export type TreeTilt = {

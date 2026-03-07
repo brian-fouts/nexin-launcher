@@ -21,8 +21,14 @@ describe("towerTypes", () => {
     for (const type of TOWER_ORDER) {
       expect(TOWER_DEFINITIONS[type].label.length).toBeGreaterThan(3);
       expect(TOWER_DEFINITIONS[type].range).toBeGreaterThan(0);
+      expect(TOWER_DEFINITIONS[type].cost).toBeGreaterThan(0);
     }
     expect(TOWER_DEFINITIONS.machine_gun.damage).toBe(4);
+  });
+
+  it("prices towers in +100 increments from top to bottom", () => {
+    const costs = TOWER_ORDER.map((type) => TOWER_DEFINITIONS[type].cost);
+    expect(costs).toEqual([100, 200, 300, 400, 500, 600, 700]);
   });
 
   it("keeps flamethrower active for 3 seconds and inactive for 2", () => {
