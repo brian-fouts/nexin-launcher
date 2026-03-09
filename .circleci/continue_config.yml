@@ -38,8 +38,12 @@ jobs:
       - run:
           name: Build and push game-backend
           command: |
-            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/checkers-backend:$CIRCLE_SHA1 ./game-backend
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/checkers-backend:$CIRCLE_SHA1
+            REGISTRY=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+            IMAGE=loadstone-gaming/checkers-backend
+            docker build -t $REGISTRY/$IMAGE:$CIRCLE_SHA1 ./game-backend
+            docker push $REGISTRY/$IMAGE:$CIRCLE_SHA1
+            docker tag $REGISTRY/$IMAGE:$CIRCLE_SHA1 $REGISTRY/$IMAGE:latest
+            docker push $REGISTRY/$IMAGE:latest
 
   build-game-frontend:
     docker:
@@ -55,8 +59,12 @@ jobs:
       - run:
           name: Build and push game-frontend
           command: |
-            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/checkers-frontend:$CIRCLE_SHA1 ./game-frontend
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/checkers-frontend:$CIRCLE_SHA1
+            REGISTRY=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+            IMAGE=loadstone-gaming/checkers-frontend
+            docker build -t $REGISTRY/$IMAGE:$CIRCLE_SHA1 ./game-frontend
+            docker push $REGISTRY/$IMAGE:$CIRCLE_SHA1
+            docker tag $REGISTRY/$IMAGE:$CIRCLE_SHA1 $REGISTRY/$IMAGE:latest
+            docker push $REGISTRY/$IMAGE:latest
 
   build-tower-defense-backend:
     docker:
@@ -72,8 +80,12 @@ jobs:
       - run:
           name: Build and push tower-defense-backend
           command: |
-            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/tower-defense-backend:$CIRCLE_SHA1 ./tower-defense-backend
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/tower-defense-backend:$CIRCLE_SHA1
+            REGISTRY=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+            IMAGE=loadstone-gaming/tower-defense-backend
+            docker build -t $REGISTRY/$IMAGE:$CIRCLE_SHA1 ./tower-defense-backend
+            docker push $REGISTRY/$IMAGE:$CIRCLE_SHA1
+            docker tag $REGISTRY/$IMAGE:$CIRCLE_SHA1 $REGISTRY/$IMAGE:latest
+            docker push $REGISTRY/$IMAGE:latest
 
   build-tower-defense-frontend:
     docker:
@@ -89,8 +101,12 @@ jobs:
       - run:
           name: Build and push tower-defense-frontend
           command: |
-            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/tower-defense-frontend:$CIRCLE_SHA1 ./tower-defense-frontend
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/tower-defense-frontend:$CIRCLE_SHA1
+            REGISTRY=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+            IMAGE=loadstone-gaming/tower-defense-frontend
+            docker build -t $REGISTRY/$IMAGE:$CIRCLE_SHA1 ./tower-defense-frontend
+            docker push $REGISTRY/$IMAGE:$CIRCLE_SHA1
+            docker tag $REGISTRY/$IMAGE:$CIRCLE_SHA1 $REGISTRY/$IMAGE:latest
+            docker push $REGISTRY/$IMAGE:latest
 
   build-matchmaker-backend:
     docker:
@@ -106,8 +122,12 @@ jobs:
       - run:
           name: Build and push matchmaker-backend
           command: |
-            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/matchmaker-backend:$CIRCLE_SHA1 ./matchmaker-backend
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/matchmaker-backend:$CIRCLE_SHA1
+            REGISTRY=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+            IMAGE=loadstone-gaming/matchmaker-backend
+            docker build -t $REGISTRY/$IMAGE:$CIRCLE_SHA1 ./matchmaker-backend
+            docker push $REGISTRY/$IMAGE:$CIRCLE_SHA1
+            docker tag $REGISTRY/$IMAGE:$CIRCLE_SHA1 $REGISTRY/$IMAGE:latest
+            docker push $REGISTRY/$IMAGE:latest
 
   build-matchmaker-frontend:
     docker:
@@ -123,8 +143,12 @@ jobs:
       - run:
           name: Build and push matchmaker-frontend
           command: |
-            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/matchmaker-frontend:$CIRCLE_SHA1 ./matchmaker-frontend
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/matchmaker-frontend:$CIRCLE_SHA1
+            REGISTRY=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+            IMAGE=loadstone-gaming/matchmaker-frontend
+            docker build -t $REGISTRY/$IMAGE:$CIRCLE_SHA1 ./matchmaker-frontend
+            docker push $REGISTRY/$IMAGE:$CIRCLE_SHA1
+            docker tag $REGISTRY/$IMAGE:$CIRCLE_SHA1 $REGISTRY/$IMAGE:latest
+            docker push $REGISTRY/$IMAGE:latest
 
   build-discord-bot:
     docker:
@@ -140,8 +164,12 @@ jobs:
       - run:
           name: Build and push discord-bot
           command: |
-            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/discord-bot:$CIRCLE_SHA1 ./discord-bot
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/discord-bot:$CIRCLE_SHA1
+            REGISTRY=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+            IMAGE=loadstone-gaming/discord-bot
+            docker build -t $REGISTRY/$IMAGE:$CIRCLE_SHA1 ./discord-bot
+            docker push $REGISTRY/$IMAGE:$CIRCLE_SHA1
+            docker tag $REGISTRY/$IMAGE:$CIRCLE_SHA1 $REGISTRY/$IMAGE:latest
+            docker push $REGISTRY/$IMAGE:latest
 
 workflows:
   build-game-backend:
