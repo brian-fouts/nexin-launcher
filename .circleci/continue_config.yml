@@ -1,0 +1,174 @@
+version: 2.1
+
+parameters:
+  game-backend:
+    type: boolean
+    default: false
+  game-frontend:
+    type: boolean
+    default: false
+  tower-defense-backend:
+    type: boolean
+    default: false
+  tower-defense-frontend:
+    type: boolean
+    default: false
+  matchmaker-backend:
+    type: boolean
+    default: false
+  matchmaker-frontend:
+    type: boolean
+    default: false
+  discord-bot:
+    type: boolean
+    default: false
+
+jobs:
+  build-game-backend:
+    docker:
+      - image: cimg/aws:2024.01
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Login to Amazon ECR
+          command: |
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - run:
+          name: Build and push game-backend
+          command: |
+            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-game-backend:$CIRCLE_SHA1 ./game-backend
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-game-backend:$CIRCLE_SHA1
+
+  build-game-frontend:
+    docker:
+      - image: cimg/aws:2024.01
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Login to Amazon ECR
+          command: |
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - run:
+          name: Build and push game-frontend
+          command: |
+            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-game-frontend:$CIRCLE_SHA1 ./game-frontend
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-game-frontend:$CIRCLE_SHA1
+
+  build-tower-defense-backend:
+    docker:
+      - image: cimg/aws:2024.01
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Login to Amazon ECR
+          command: |
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - run:
+          name: Build and push tower-defense-backend
+          command: |
+            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-tower-defense-backend:$CIRCLE_SHA1 ./tower-defense-backend
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-tower-defense-backend:$CIRCLE_SHA1
+
+  build-tower-defense-frontend:
+    docker:
+      - image: cimg/aws:2024.01
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Login to Amazon ECR
+          command: |
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - run:
+          name: Build and push tower-defense-frontend
+          command: |
+            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-tower-defense-frontend:$CIRCLE_SHA1 ./tower-defense-frontend
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-tower-defense-frontend:$CIRCLE_SHA1
+
+  build-matchmaker-backend:
+    docker:
+      - image: cimg/aws:2024.01
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Login to Amazon ECR
+          command: |
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - run:
+          name: Build and push matchmaker-backend
+          command: |
+            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-matchmaker-backend:$CIRCLE_SHA1 ./matchmaker-backend
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-matchmaker-backend:$CIRCLE_SHA1
+
+  build-matchmaker-frontend:
+    docker:
+      - image: cimg/aws:2024.01
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Login to Amazon ECR
+          command: |
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - run:
+          name: Build and push matchmaker-frontend
+          command: |
+            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-matchmaker-frontend:$CIRCLE_SHA1 ./matchmaker-frontend
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-matchmaker-frontend:$CIRCLE_SHA1
+
+  build-discord-bot:
+    docker:
+      - image: cimg/aws:2024.01
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Login to Amazon ECR
+          command: |
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - run:
+          name: Build and push discord-bot
+          command: |
+            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-discord-bot:$CIRCLE_SHA1 ./discord-bot
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-discord-bot:$CIRCLE_SHA1
+
+workflows:
+  build-game-backend:
+    when: << pipeline.parameters.game-backend >>
+    jobs:
+      - build-game-backend
+  build-game-frontend:
+    when: << pipeline.parameters.game-frontend >>
+    jobs:
+      - build-game-frontend
+  build-tower-defense-backend:
+    when: << pipeline.parameters.tower-defense-backend >>
+    jobs:
+      - build-tower-defense-backend
+  build-tower-defense-frontend:
+    when: << pipeline.parameters.tower-defense-frontend >>
+    jobs:
+      - build-tower-defense-frontend
+  build-matchmaker-backend:
+    when: << pipeline.parameters.matchmaker-backend >>
+    jobs:
+      - build-matchmaker-backend
+  build-matchmaker-frontend:
+    when: << pipeline.parameters.matchmaker-frontend >>
+    jobs:
+      - build-matchmaker-frontend
+  build-discord-bot:
+    when: << pipeline.parameters.discord-bot >>
+    jobs:
+      - build-discord-bot

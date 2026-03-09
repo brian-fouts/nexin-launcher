@@ -744,6 +744,15 @@ function applyDamageToEnemy(enemy: EnemyRuntime, amount: number, kind: DamageKin
   enemy.health = Math.max(0, enemy.health - finalDamage);
 }
 
+/** Collision square centered on the tree, matching visual extent (crown + margin). */
+function getTreeCollisionSquare(tree: TreeDefinition): Square {
+  return {
+    x: tree.x,
+    z: tree.z,
+    halfSize: tree.crownRadius + 0.8,
+  };
+}
+
 function getTreeGridSquare(
   tree: TreeDefinition,
   worldBounds: { width: number; depth: number },
@@ -775,7 +784,7 @@ function getTowerPlacementRejectionReason(
   }
 
   const blockedByTree = trees.some((tree) =>
-    circleOverlapsSquare({ x, z, radius: TOWER_COLLISION_RADIUS }, getTreeGridSquare(tree, worldBounds))
+    circleOverlapsSquare({ x, z, radius: TOWER_COLLISION_RADIUS }, getTreeCollisionSquare(tree))
   );
   if (blockedByTree) {
     return "Cannot place tower on a tree.";
@@ -925,8 +934,8 @@ function App() {
   const hoverRangeOverlayRef = useRef<THREE.Mesh | null>(null);
   const ghostTowerRef = useRef<THREE.Group | null>(null);
   const worldBoundsRef = useRef<{ width: number; depth: number }>({
-    width: Math.max(INITIAL_STATE.map.width, 320),
-    depth: Math.max(INITIAL_STATE.map.depth, 320),
+    width: INITIAL_STATE.map.width,
+    depth: INITIAL_STATE.map.depth,
   });
   const pendingPlacementRef = useRef<PendingTowerPlacement | null>(null);
   const fpsFrameCountRef = useRef(0);
@@ -1454,7 +1463,7 @@ function App() {
         const worldBounds = worldBoundsRef.current;
         const navObstacles: NavObstacle[] = [
           ...mapRef.current.trees.map((tree) => {
-            const square = getTreeGridSquare(tree, worldBounds, NAV_GRID_CELL_SIZE);
+            const square = getTreeCollisionSquare(tree);
             return {
               kind: "square" as const,
               x: square.x,
@@ -1537,18 +1546,8 @@ function App() {
 
           const enemySpeedBase = elapsed < enemy.slowUntil ? 2.6 / 3 : 5.2 / 3;
           const enemySpeed = enemySpeedBase * wave.speedMultiplier * enemy.moveSpeedMultiplier * 1.5;
-          let navTargetX = playerMesh.position.x;
-          let navTargetZ = playerMesh.position.z;
-          const coarsePath = mapRef.current.enemyPath ?? [];
-          if (enemy.pathIndex < coarsePath.length) {
-            const waypoint = coarsePath[enemy.pathIndex];
-            navTargetX = waypoint.x;
-            navTargetZ = waypoint.z;
-            const wpDist = Math.hypot(enemy.mesh.position.x - waypoint.x, enemy.mesh.position.z - waypoint.z);
-            if (wpDist <= Math.max(4.2, enemy.collisionRadius * 0.9)) {
-              enemy.pathIndex += 1;
-            }
-          }
+          const navTargetX = playerMesh.position.x;
+          const navTargetZ = playerMesh.position.z;
 
           const goalShift = Math.hypot(navTargetX - enemy.lastGoalX, navTargetZ - enemy.lastGoalZ);
           if (goalShift > 4.5 && enemy.pathPlanner) {
@@ -1610,14 +1609,16 @@ function App() {
             resolvedZ = out.az;
           }
 
-          // Block movement through trees.
-          for (const tree of mapRef.current.trees) {
-            const out = resolveCircleSquareOverlap(
-              { x: resolvedX, z: resolvedZ, radius: enemy.collisionRadius },
-              getTreeGridSquare(tree, worldBoundsRef.current, NAV_GRID_CELL_SIZE)
-            );
-            resolvedX = out.ax;
-            resolvedZ = out.az;
+          // Block movement through trees (multi-pass so we don't get pushed into another tree).
+          for (let pass = 0; pass < 3; pass += 1) {
+            for (const tree of mapRef.current.trees) {
+              const out = resolveCircleSquareOverlap(
+                { x: resolvedX, z: resolvedZ, radius: enemy.collisionRadius },
+                getTreeCollisionSquare(tree)
+              );
+              resolvedX = out.ax;
+              resolvedZ = out.az;
+            }
           }
 
           // Block movement through other enemies (single-pass deterministic resolve).
@@ -1736,6 +1737,8 @@ function App() {
           if (type === "oil") continue;
           if (type === "laser") {
             applyDamageToEnemy(nearest, def.damage * delta, "energy");
+            // Don't create laser VFX if target just died — avoids beam/particles stuck at death position.
+            if (nearest.health <= 0 || nearest.dead) continue;
             const dir = to.clone().sub(from);
             const beamLength = dir.length();
             const beamCore = new THREE.Mesh(
@@ -1793,21 +1796,22 @@ function App() {
             const laserVfxKey = `${tower.id}:laser-vfx`;
             const nextLaserVfxAt = towerNextFireRef.current[laserVfxKey] ?? 0;
             if (elapsed >= nextLaserVfxAt) {
-              towerNextFireRef.current[laserVfxKey] = elapsed + 0.06;
+              const intensityScale = 10; // +1000% intensity target
+              towerNextFireRef.current[laserVfxKey] = elapsed + 0.045;
               const beamDir = dir.clone().normalize();
               const side = new THREE.Vector3(0, 1, 0).cross(beamDir).normalize();
               const up = beamDir.clone().cross(side).normalize();
-              const sparkCount = 3;
+              const sparkCount = Math.max(1, Math.floor(8 * intensityScale));
               for (let i = 0; i < sparkCount; i += 1) {
                 const t = Math.random();
-                const radial = (Math.random() - 0.5) * 1.6 * PARTICLE_SIZE_MULTIPLIER;
-                const vertical = (Math.random() - 0.5) * 1.2 * PARTICLE_SIZE_MULTIPLIER;
+                const radial = (Math.random() - 0.5) * 2.8 * PARTICLE_SIZE_MULTIPLIER;
+                const vertical = (Math.random() - 0.5) * 2.2 * PARTICLE_SIZE_MULTIPLIER;
                 const spark = new THREE.Mesh(
-                  new THREE.SphereGeometry(0.07 * PARTICLE_SIZE_MULTIPLIER, 7, 7),
+                  new THREE.SphereGeometry(0.085 * PARTICLE_SIZE_MULTIPLIER, 7, 7),
                   new THREE.MeshBasicMaterial({
                     color: Math.random() > 0.45 ? "#f472b6" : "#c084fc",
                     transparent: true,
-                    opacity: 0.92,
+                    opacity: 0.98,
                     blending: THREE.AdditiveBlending,
                     depthWrite: false,
                   })
@@ -1820,14 +1824,75 @@ function App() {
                 particleGroup.add(spark);
                 const velocity = side
                   .clone()
-                  .multiplyScalar((Math.random() - 0.5) * 18)
-                  .addScaledVector(up, (Math.random() - 0.2) * 14)
-                  .addScaledVector(beamDir, (Math.random() - 0.5) * 8);
+                  .multiplyScalar((Math.random() - 0.5) * 26)
+                  .addScaledVector(up, (Math.random() - 0.25) * 20)
+                  .addScaledVector(beamDir, (Math.random() - 0.5) * 12);
                 pushParticle(particlesRef.current, particleGroup, {
                   mesh: spark,
                   velocity,
-                  life: 0.14 + Math.random() * 0.08,
-                  drag: 3.2,
+                  life: 0.09 + Math.random() * 0.06,
+                  drag: 2.7,
+                });
+              }
+
+              // Hot impact shards in laser colors at the contact point.
+              const impactDir = beamDir.clone().multiplyScalar(-1);
+              const impactCount = Math.max(1, Math.floor(12 * intensityScale));
+              for (let i = 0; i < impactCount; i += 1) {
+                const shard = new THREE.Mesh(
+                  new THREE.SphereGeometry(0.075 * PARTICLE_SIZE_MULTIPLIER, 6, 6),
+                  new THREE.MeshBasicMaterial({
+                    color: Math.random() > 0.45 ? "#a855f7" : "#f472b6",
+                    transparent: true,
+                    opacity: 1,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false,
+                  })
+                );
+                const sideJitter = (Math.random() - 0.5) * 2.4 * PARTICLE_SIZE_MULTIPLIER;
+                const upJitter = (Math.random() - 0.5) * 2.2 * PARTICLE_SIZE_MULTIPLIER;
+                shard.position
+                  .copy(to)
+                  .addScaledVector(side, sideJitter)
+                  .addScaledVector(up, upJitter)
+                  .addScaledVector(impactDir, 0.45);
+                particleGroup.add(shard);
+                const shardVelocity = impactDir
+                  .clone()
+                  .multiplyScalar(12 + Math.random() * 18)
+                  .addScaledVector(side, (Math.random() - 0.5) * 28)
+                  .addScaledVector(up, (Math.random() - 0.22) * 22);
+                pushParticle(particlesRef.current, particleGroup, {
+                  mesh: shard,
+                  velocity: shardVelocity,
+                  life: 0.08 + Math.random() * 0.06,
+                  drag: 3.1,
+                  gravity: 9,
+                });
+              }
+
+              // Brief impact flash ring to sell the violent laser strike.
+              for (let i = 0; i < 3; i += 1) {
+                const flash = new THREE.Mesh(
+                  new THREE.RingGeometry(0.35 * PARTICLE_SIZE_MULTIPLIER, 1.8 * PARTICLE_SIZE_MULTIPLIER, 24),
+                  new THREE.MeshBasicMaterial({
+                    color: i % 2 === 0 ? "#f472b6" : "#a855f7",
+                    transparent: true,
+                    opacity: 0.9,
+                    side: THREE.DoubleSide,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false,
+                  })
+                );
+                flash.position.copy(to).addScaledVector(impactDir, 0.16 + i * 0.05);
+                flash.lookAt(flash.position.clone().add(impactDir));
+                flash.scale.setScalar(1 + i * 0.35);
+                particleGroup.add(flash);
+                pushParticle(particlesRef.current, particleGroup, {
+                  mesh: flash,
+                  velocity: impactDir.clone().multiplyScalar(7 + i * 2),
+                  life: 0.08 + i * 0.02,
+                  drag: 7,
                 });
               }
             }
@@ -2019,6 +2084,33 @@ function App() {
             );
           });
           if (hitEnemy) {
+            const impactPos = p.mesh.position.clone();
+            for (let s = 0; s < 4; s += 1) {
+              const sparkle = new THREE.Mesh(
+                new THREE.SphereGeometry(0.08 * PARTICLE_SIZE_MULTIPLIER, 7, 7),
+                new THREE.MeshBasicMaterial({
+                  color: Math.random() > 0.5 ? "#fde047" : "#f8fafc",
+                  transparent: true,
+                  opacity: 0.92,
+                  blending: THREE.AdditiveBlending,
+                  depthWrite: false,
+                })
+              );
+              sparkle.position.copy(impactPos);
+              particleGroup.add(sparkle);
+              const burst = new THREE.Vector3(
+                (Math.random() - 0.5) * 14,
+                2 + Math.random() * 8,
+                (Math.random() - 0.5) * 14
+              );
+              pushParticle(particlesRef.current, particleGroup, {
+                mesh: sparkle,
+                velocity: burst,
+                life: 0.1 + Math.random() * 0.06,
+                drag: 5.2,
+                gravity: 12,
+              });
+            }
             particleGroup.remove(p.mesh);
             disposeRenderable(p.mesh);
             particlesRef.current.splice(i, 1);
@@ -2091,12 +2183,10 @@ function App() {
       scene.fog = new THREE.Fog(map.groundColor, 220, 520);
     }
 
-    const expandedWidth = Math.max(map.width, 320);
-    const expandedDepth = Math.max(map.depth, 320);
-    worldBoundsRef.current = { width: expandedWidth, depth: expandedDepth };
+    worldBoundsRef.current = { width: map.width, depth: map.depth };
+    const visibleBottom = Math.min(map.depth * 0.22, 58);
     const player = playerRef.current;
     if (player) {
-      const visibleBottom = Math.min(expandedDepth * 0.22, 58);
       player.position.set(0, 0, visibleBottom);
       playerTargetRef.current = null;
       pendingPlacementRef.current = null;
@@ -2104,7 +2194,7 @@ function App() {
     const enemyGroup = enemyGroupRef.current;
     if (enemyGroup) {
       enemyGroup.clear();
-      const spawns = buildEnemySpawns(expandedWidth, expandedDepth, 21);
+      const spawns = buildEnemySpawns(map.width, map.depth, 21, visibleBottom);
       enemiesRef.current = spawns.map((spawn, index) => {
         const hatProfile = getEnemyHatProfile(index, spawns.length);
         const { enemy: mesh, hat } = makeEnemyCharacter(hatProfile.hat, hatProfile.dumbness, index);
@@ -2177,12 +2267,12 @@ function App() {
       canvas: grassTexture.canvas,
       ctx: grassTexture.ctx,
       texture: grassTexture.texture,
-      worldWidth: expandedWidth,
-      worldDepth: expandedDepth,
+      worldWidth: map.width,
+      worldDepth: map.depth,
     };
 
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(expandedWidth, expandedDepth),
+      new THREE.PlaneGeometry(map.width, map.depth),
       new THREE.MeshStandardMaterial({
         color: map.groundColor,
         map: grassTexture.texture,
@@ -2195,7 +2285,7 @@ function App() {
     mapGroup.add(ground);
     groundRef.current = ground;
 
-    const decor = generateGroundLayout(expandedWidth, expandedDepth, seed ^ 0xabc123);
+    const decor = generateGroundLayout(map.width, map.depth, seed ^ 0xabc123);
     const dummy = new THREE.Object3D();
 
     const stickMesh = new THREE.InstancedMesh(

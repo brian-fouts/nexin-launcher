@@ -31,7 +31,7 @@ export const TOWER_DEFINITIONS: Record<TowerType, TowerDefinition> = {
   flamethrower: {
     label: "Flamethrower Turret",
     description: "3s active / 2s inactive. Short range directional area damage.",
-    cost: 200,
+    cost: 100,
     range: 45,
     damage: 20,
     fireInterval: 0.2,
@@ -47,7 +47,7 @@ export const TOWER_DEFINITIONS: Record<TowerType, TowerDefinition> = {
   laser: {
     label: "Laser Tower",
     description: "Continuous medium range beam with damage over time.",
-    cost: 400,
+    cost: 100,
     range: 90,
     damage: 16,
     fireInterval: 0.1,

@@ -37,10 +37,19 @@ export type EnemyHatProfile = {
   hat: HatVariant;
 };
 
-export function buildEnemySpawns(width: number, depth: number, count: number): EnemySpawn[] {
+export function buildEnemySpawns(
+  width: number,
+  depth: number,
+  count: number,
+  /** When set, spawns are placed just above this z so they appear on screen near the player. */
+  visibleBottomZ?: number
+): EnemySpawn[] {
   const safeCount = Math.max(1, count);
   const laneWidth = Math.min(width * 0.72, 220);
-  const topZ = -Math.min(depth * 0.22, 62);
+  const topZ =
+    visibleBottomZ !== undefined
+      ? visibleBottomZ - 80
+      : -Math.min(depth * 0.22, 62);
   const secondRowZ = topZ + 9;
   const spawns: EnemySpawn[] = [];
 
