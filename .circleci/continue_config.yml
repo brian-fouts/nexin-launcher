@@ -38,8 +38,8 @@ jobs:
       - run:
           name: Build and push game-backend
           command: |
-            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-game-backend:$CIRCLE_SHA1 ./game-backend
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-game-backend:$CIRCLE_SHA1
+            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/checkers-backend:$CIRCLE_SHA1 ./game-backend
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/checkers-backend:$CIRCLE_SHA1
 
   build-game-frontend:
     docker:
@@ -55,8 +55,8 @@ jobs:
       - run:
           name: Build and push game-frontend
           command: |
-            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-game-frontend:$CIRCLE_SHA1 ./game-frontend
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-game-frontend:$CIRCLE_SHA1
+            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/checkers-frontend:$CIRCLE_SHA1 ./game-frontend
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/checkers-frontend:$CIRCLE_SHA1
 
   build-tower-defense-backend:
     docker:
@@ -72,8 +72,8 @@ jobs:
       - run:
           name: Build and push tower-defense-backend
           command: |
-            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-tower-defense-backend:$CIRCLE_SHA1 ./tower-defense-backend
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-tower-defense-backend:$CIRCLE_SHA1
+            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/tower-defense-backend:$CIRCLE_SHA1 ./tower-defense-backend
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/tower-defense-backend:$CIRCLE_SHA1
 
   build-tower-defense-frontend:
     docker:
@@ -89,8 +89,8 @@ jobs:
       - run:
           name: Build and push tower-defense-frontend
           command: |
-            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-tower-defense-frontend:$CIRCLE_SHA1 ./tower-defense-frontend
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-tower-defense-frontend:$CIRCLE_SHA1
+            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/tower-defense-frontend:$CIRCLE_SHA1 ./tower-defense-frontend
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/tower-defense-frontend:$CIRCLE_SHA1
 
   build-matchmaker-backend:
     docker:
@@ -106,8 +106,8 @@ jobs:
       - run:
           name: Build and push matchmaker-backend
           command: |
-            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-matchmaker-backend:$CIRCLE_SHA1 ./matchmaker-backend
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-matchmaker-backend:$CIRCLE_SHA1
+            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/matchmaker-backend:$CIRCLE_SHA1 ./matchmaker-backend
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/matchmaker-backend:$CIRCLE_SHA1
 
   build-matchmaker-frontend:
     docker:
@@ -123,8 +123,8 @@ jobs:
       - run:
           name: Build and push matchmaker-frontend
           command: |
-            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-matchmaker-frontend:$CIRCLE_SHA1 ./matchmaker-frontend
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-matchmaker-frontend:$CIRCLE_SHA1
+            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/matchmaker-frontend:$CIRCLE_SHA1 ./matchmaker-frontend
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/matchmaker-frontend:$CIRCLE_SHA1
 
   build-discord-bot:
     docker:
@@ -140,8 +140,8 @@ jobs:
       - run:
           name: Build and push discord-bot
           command: |
-            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-discord-bot:$CIRCLE_SHA1 ./discord-bot
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/nexin-launcher-discord-bot:$CIRCLE_SHA1
+            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/discord-bot:$CIRCLE_SHA1 ./discord-bot
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/loadstone-gaming/discord-bot:$CIRCLE_SHA1
 
 workflows:
   build-game-backend:
