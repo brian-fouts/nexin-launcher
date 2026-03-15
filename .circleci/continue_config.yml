@@ -120,14 +120,19 @@ jobs:
           command: |
             aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
       - run:
-          name: Build and push matchmaker-backend
+          name: Set up buildx for multi-arch (amd64 + arm64)
+          command: |
+            docker run --privileged --rm tonistiigi/binfmt --install all
+            docker buildx use multiarch 2>/dev/null || docker buildx create --name multiarch --use
+            docker buildx inspect --bootstrap
+      - run:
+          name: Build and push matchmaker-backend (multi-arch)
           command: |
             REGISTRY=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
             IMAGE=loadstone-gaming/matchmaker-backend
-            docker build -t $REGISTRY/$IMAGE:$CIRCLE_SHA1 ./matchmaker-backend
-            docker push $REGISTRY/$IMAGE:$CIRCLE_SHA1
-            docker tag $REGISTRY/$IMAGE:$CIRCLE_SHA1 $REGISTRY/$IMAGE:latest
-            docker push $REGISTRY/$IMAGE:latest
+            docker buildx build --platform linux/amd64,linux/arm64 \
+              -t $REGISTRY/$IMAGE:$CIRCLE_SHA1 -t $REGISTRY/$IMAGE:latest \
+              --push ./matchmaker-backend
 
   build-matchmaker-frontend:
     docker:
@@ -141,14 +146,19 @@ jobs:
           command: |
             aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
       - run:
-          name: Build and push matchmaker-frontend
+          name: Set up buildx for multi-arch (amd64 + arm64)
+          command: |
+            docker run --privileged --rm tonistiigi/binfmt --install all
+            docker buildx use multiarch 2>/dev/null || docker buildx create --name multiarch --use
+            docker buildx inspect --bootstrap
+      - run:
+          name: Build and push matchmaker-frontend (multi-arch)
           command: |
             REGISTRY=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
             IMAGE=loadstone-gaming/matchmaker-frontend
-            docker build -t $REGISTRY/$IMAGE:$CIRCLE_SHA1 ./matchmaker-frontend
-            docker push $REGISTRY/$IMAGE:$CIRCLE_SHA1
-            docker tag $REGISTRY/$IMAGE:$CIRCLE_SHA1 $REGISTRY/$IMAGE:latest
-            docker push $REGISTRY/$IMAGE:latest
+            docker buildx build --platform linux/amd64,linux/arm64 \
+              -t $REGISTRY/$IMAGE:$CIRCLE_SHA1 -t $REGISTRY/$IMAGE:latest \
+              --push ./matchmaker-frontend
 
   build-discord-bot:
     docker:

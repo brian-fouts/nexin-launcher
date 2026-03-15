@@ -1,6 +1,6 @@
 # Cursor
 .cursor/
-
+k3s
 # Environment and secrets
 .env
 .env.local
