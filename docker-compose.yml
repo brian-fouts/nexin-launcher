@@ -36,7 +36,7 @@ services:
   matchmaker-backend:
     build:
       context: ./matchmaker-backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.local
     env_file:
       - .env
     environment:
@@ -65,7 +65,7 @@ services:
   game-backend:
     build:
       context: ./game-backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.local
     env_file:
       - .env
     environment:
@@ -97,7 +97,7 @@ services:
   matchmaker-frontend:
     build:
       context: ./matchmaker-frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.local
     env_file:
       - .env
     environment:
@@ -117,7 +117,7 @@ services:
   game-frontend:
     build:
       context: ./game-frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.local
     env_file:
       - .env
     environment:
@@ -135,7 +135,7 @@ services:
   tower-defense-backend:
     build:
       context: ./tower-defense-backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.local
     environment:
       DJANGO_SECRET_KEY: tower-defense-dev-secret
       DEBUG: "true"
@@ -149,7 +149,7 @@ services:
   tower-defense-frontend:
     build:
       context: ./tower-defense-frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.local
     environment:
       TOWER_DEFENSE_BACKEND_URL: http://tower-defense-backend:8010
     depends_on:
@@ -166,7 +166,7 @@ services:
   discord-bot:
     build:
       context: ./discord-bot
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.local
     env_file:
       - .env
     environment:
